@@ -1,0 +1,2 @@
+# ga4gh_trustworthy_federated_ai_gsoc_2026
+GA4GH Trustworthy Federated AI
