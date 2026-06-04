@@ -1,0 +1,15 @@
+info:
+  name: "test workflow run "
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: POST http://localhost:7500/ga4gh/wes/v1/runs
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
