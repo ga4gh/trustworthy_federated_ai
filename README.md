@@ -2,3 +2,9 @@
 GA4GH Trustworthy Federated AI
 ## Project Summary
 This proposal addresses the deployment gap in federated learning for genomics, where frameworks like FLAN enable distributed model training but lack standardization, security, and interoperability required for real-world biomedical environments. As a result, federated learning systems remain difficult to deploy across institutions and cannot scale in regulated settings. To solve this, the project transforms FLAN into a GA4GH-aligned, production-ready federated AI system by integrating key standards across the stack. It incorporates DRS for secure and standardized data access, TES/WES for portable and reproducible task and workflow execution, and TRS for containerized tool discovery. Security is strengthened using GA4GH Passports and Attested TLS for zero-trust, identity-aware communication, while Model Context Protocol (MCP) is introduced to enforce privacy constraints and execution policies across federated nodes. The deliverables include a refactored FLAN pipeline with DRS-based data access, modular training workflows executed via TES, end-to-end orchestration using WES (CWL/WDL/Nextflow), containerized environments registered with TRS, integrated Passport-based authentication and Attested TLS communication, a prototype MCP-based policy enforcement layer, and comprehensive documentation with a GA4GH-compliant reference implementation.
+
+1. Data Ingestion: flan global prepare: 
+The Target Integration: DRS (Data Repository Service) & Passports/Visas
+2. The Compute Workers: flan client fit & Local PLINK: 
+The Target Integration: TES (Task Execution Service), TRS (Tool Registry Service) & aTLS
+3. The Lifecycle Orchestrator: flan server fit & flan global fit:The Target Integration: WES (Workflow Execution Service) & MCP (Model Context Protocol)
