@@ -1,70 +1,102 @@
 # client.py
 import argparse
+import requests
+import pandas as pd
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 import flwr as fl
-from model import SimpleMLP, get_parameters, set_parameters
+from model import AncestryMLP, get_parameters, set_parameters
 
-# 1. Parse command-line argument to distinguish multiple mock clients
-parser = argparse.ArgumentParser(description="Flower Client")
-parser.add_argument("--client-id", type=int, required=True, help="ID of the client (1 or 2)")
+parser = argparse.ArgumentParser(description="Live Two-Step GA4GH DRS Native Flower Client")
+parser.add_argument("--client-id", type=int, required=True, help="1 or 2")
+parser.add_argument("--drs-uri", type=str, required=True, help="drs://localhost:4500/mock_1k_genomes_nodeX")
 args = parser.parse_args()
 
-# 2. Mock isolated local data (Imagine this is reading local files securely)
-# Input features: 20-dimensional coordinates (like compressed PCA eigenvectors)
-if args.client_id == 1:
-    X_local = torch.randn(200, 20)
-    y_local = torch.randint(0, 5, (200,))
-else:
-    X_local = torch.randn(150, 20)
-    y_local = torch.randint(0, 5, (150,))
+def fetch_data_from_drs_compliant(drs_uri):
+    """
+    Executes a fully specification-compliant GA4GH DRS two-step resolution sequence.
+    Step 1: Get metadata object to extract access_id.
+    Step 2: Request the raw URL link using that specific access block token.
+    """
+    print(f"\n[GA4GH DRS] Intercepted protocol lookup URI: {drs_uri}")
+    object_id = drs_uri.split("/")[-1]
+    
+    # --- STEP 1: Metadata Extraction ---
+    drs_metadata_url = f"http://localhost:4500/ga4gh/drs/v1/objects/{object_id}"
+    print(f"[GA4GH DRS] Step 1: Requesting metadata from public portal...")
+    
+    response = requests.get(drs_metadata_url)
+    response.raise_for_status()
+    metadata = response.json()
+    
+    # Safely extract access ID token from the top structure
+    access_method = metadata["access_methods"][0]
+    access_id = access_method["access_id"]
+    print(f"[GA4GH DRS] Step 1 Complete. Dynamic Access ID acquired: '{access_id}'")
+    
+    # --- STEP 2: Access Token Exchange ---
+    drs_access_url = f"http://localhost:4500/ga4gh/drs/v1/objects/{object_id}/access/{access_id}"
+    print(f"[GA4GH DRS] Step 2: Requesting authorization data stream pointer...")
+    
+    access_response = requests.get(drs_access_url)
+    access_response.raise_for_status()
+    access_data = access_response.json()
+    
+    # The Starter Kit returns a direct dictionary containing the true file url or path mapping
+    resolved_file_url = access_data["url"]
+    print(f"[GA4GH DRS] Step 2 Complete. Storage address unlocked: {resolved_file_url}")
+    
+    # Clean up standard 'file://' prefix if present for native pandas parsing compatibility
+    if resolved_file_url.startswith("file://"):
+        resolved_file_url = resolved_file_url.replace("file://", "", 1)
+        
+    print(f"[GA4GH DRS] Handshake finished. Loading genetic tracking vector directly into memory...")
+    
+    # Load the synthetic 1000 Genomes Principal Component coordinates from the target CSV
+    df = pd.read_csv(resolved_file_url)
+    X = torch.tensor(df.iloc[:, :20].values, dtype=torch.float32)
+    y = torch.tensor(df["superpop"].values, dtype=torch.long)
+    
+    print(f"[GA4GH DRS] Matrix Ingestion Success. Dimensions: Features={X.shape}, Classes={len(y.unique())}\n")
+    return TensorDataset(X, y)
 
-dataset = TensorDataset(X_local, y_local)
-train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
+# Initialize dataset directly from the secure two-step protocol resolution
+local_dataset = fetch_data_from_drs_compliant(args.drs_uri)
+train_loader = DataLoader(local_dataset, batch_size=32, shuffle=True)
 
-# 3. Initialize local model framework
-net = SimpleMLP(input_dim=20, num_classes=5)
+# Define network core runtime components
+net = AncestryMLP()
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=0.01)
 
-# 4. Define the Flower Client logic
-class AncestryClient(fl.client.NumPyClient):
+class TrustworthyClient(fl.client.NumPyClient):
     def get_parameters(self, config):
         return get_parameters(net)
 
     def fit(self, parameters, config):
-        print(f"[Client {args.client_id}] Received global model weights. Starting local epoch...")
         set_parameters(net, parameters)
-        
-        # Local training loop execution
         net.train()
-        for epoch in range(2):  # Local epochs execution
+        for epoch in range(5):
             for X_batch, y_batch in train_loader:
                 optimizer.zero_grad()
-                outputs = net(X_batch)
-                loss = criterion(outputs, y_batch)
+                loss = criterion(net(X_batch), y_batch)
                 loss.backward()
                 optimizer.step()
-                
-        print(f"[Client {args.client_id}] Local training complete. Transmitting math arrays back to server.")
         return get_parameters(net), len(train_loader.dataset), {}
 
     def evaluate(self, parameters, config):
         set_parameters(net, parameters)
         net.eval()
-        # For evaluation showcase, computing loss on local data slice
-        loss = 0.0
-        correct = 0
+        loss, correct = 0.0, 0
         with torch.no_grad():
             for X_batch, y_batch in train_loader:
                 outputs = net(X_batch)
                 loss += criterion(outputs, y_batch).item()
                 correct += (torch.max(outputs, 1)[1] == y_batch).sum().item()
-        
         accuracy = correct / len(train_loader.dataset)
+        print(f"[Client {args.client_id} Evaluation] Round Completed. Current Accuracy: {accuracy:.4f}")
         return float(loss/len(train_loader)), len(train_loader.dataset), {"accuracy": float(accuracy)}
 
-# 5. Connect and start client lifecycle
 if __name__ == "__main__":
-    fl.client.start_numpy_client(server_address="127.0.0.1:8080", client=AncestryClient())
+    fl.client.start_numpy_client(server_address="127.0.0.1:8080", client=TrustworthyClient())

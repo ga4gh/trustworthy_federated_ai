@@ -1,0 +1,21 @@
+{
+  "id": "1k_genomes_node1",
+  "name": "1000_Genomes_Phase3_Node1",
+  "description": "Compressed PLINK2 Principal Components matrix for EUR and SAS heavy sub-cohorts.",
+  "size": 48000,
+  "checksums": [
+    {
+      "checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "type": "sha-256"
+    }
+  ],
+  "access_methods": [
+    {
+      "type": "file",
+      "access_url": {
+        "url": "file:///app/data/node1_coordinates.csv"
+      },
+      "region": "local-TRE-siteA"
+    }
+  ]
+}
