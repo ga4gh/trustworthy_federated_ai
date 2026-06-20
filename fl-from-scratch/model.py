@@ -3,19 +3,24 @@ import torch
 import torch.nn as nn
 from collections import OrderedDict
 
-class AncestryMLP(nn.Module):
+SUPERPOPS = ["AFR", "AMR", "EAS", "EUR", "SAS"]
+
+class AncestryNet(nn.Module):
     def __init__(self, input_dim=20, num_classes=5):
-        super(AncestryMLP, self).__init__()
-        self.network = nn.Sequential(
-            nn.Linear(input_dim, 64),
+        super(AncestryNet, self).__init__()
+        # A clean, highly concrete architecture designed for tabular genomic vectors
+        self.fc_layer = nn.Sequential(
+            nn.Linear(input_dim, 32),
             nn.ReLU(),
-            nn.Linear(64, 32),
+            nn.BatchNorm1d(32),
+            nn.Dropout(0.2),
+            nn.Linear(32, 16),
             nn.ReLU(),
-            nn.Linear(32, num_classes)
+            nn.Linear(16, num_classes)
         )
 
     def forward(self, x):
-        return self.network(x)
+        return self.fc_layer(x)
 
 def get_parameters(net):
     return [val.cpu().numpy() for _, val in net.state_dict().items()]
