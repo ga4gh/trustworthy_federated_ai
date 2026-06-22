@@ -1,14 +1,13 @@
-# model.py
 import torch
 import torch.nn as nn
 from collections import OrderedDict
 
+# Unified superpopulations mapping for the 5 global ancestry classes
 SUPERPOPS = ["AFR", "AMR", "EAS", "EUR", "SAS"]
 
 class AncestryNet(nn.Module):
-    def __init__(self, input_dim=20, num_classes=5):
+    def __init__(self, input_dim=10, num_classes=5):  # Crucial: Must be 10 everywhere!
         super(AncestryNet, self).__init__()
-        # A clean, highly concrete architecture designed for tabular genomic vectors
         self.fc_layer = nn.Sequential(
             nn.Linear(input_dim, 32),
             nn.ReLU(),

@@ -1,4 +1,3 @@
-# client.py
 import argparse
 import requests
 import pandas as pd
@@ -8,63 +7,52 @@ from torch.utils.data import DataLoader, TensorDataset
 import flwr as fl
 from model import AncestryNet, get_parameters, set_parameters, SUPERPOPS
 
-parser = argparse.ArgumentParser(description="Live Two-Step GA4GH DRS Native Flower Client")
-parser.add_argument("--client-id", type=int, required=True, help="1 or 2")
-parser.add_argument("--genotypes-id", type=str, required=True, help="DRS ID of the sscore file")
-parser.add_argument("--ancestry-id", type=str, required=True, help="DRS ID of the tsv file")
+parser = argparse.ArgumentParser(description="Federated Client using GA4GH DRS")
+parser.add_argument("--client-id", type=int, required=True)
+parser.add_argument("--drs-id", type=str, required=True, help="DRS ID of the unified file")
 args = parser.parse_args()
 
-def resolve_single_drs_stream(object_id):
-    """
-    Performs full two-step GA4GH lookup to resolve an exact, streamable byte URL.
-    """
-    # Step 1: Retrieve Access ID from metadata
-    meta_url = f"http://localhost:4500/ga4gh/drs/v1/objects/{object_id}"
-    meta_resp = requests.get(meta_url).json()
+def resolve_drs_stream(object_id):
+    """Resolves a DRS ID to a streaming URL via the local GA4GH Starter Kit."""
+    base_url = "http://localhost:4500/ga4gh/drs/v1/objects"
+    
+    # 1. Fetch metadata to catch access method mapping
+    meta_resp = requests.get(f"{base_url}/{object_id}").json()
     access_id = meta_resp["access_methods"][0]["access_id"]
     
-    # Step 2: Acquire tokenized stream pointer
-    access_url = f"http://localhost:4500/ga4gh/drs/v1/objects/{object_id}/access/{access_id}"
+    # 2. Extract direct streaming link
+    access_url = f"{base_url}/{object_id}/access/{access_id}"
     stream_url = requests.get(access_url).json()["url"]
     
-    # Clean up standard 'file://' prefix if the starter kit fallback mode exposes it directly
     if stream_url.startswith("file://"):
-        stream_url = stream_url.replace("file://", "", 1)
-        
+        return stream_url.replace("file://", "", 1)
     return stream_url
 
-def load_and_align_datasets(genotypes_id, ancestry_id):
-    print("\n[GA4GH DRS Orchestration] Resolving streaming vectors...")
+def load_unified_dataset(drs_id):
+    print(f"\n[DRS] Resolving unified dataset: {drs_id}")
+    stream_path = resolve_drs_stream(drs_id)
     
-    # Call the endpoints to fetch data locations
-    sscore_stream = resolve_single_drs_stream(genotypes_id)
-    print(f"[DRS Stream Unlocked] Genotypes destination -> {sscore_stream}")
+    # Load the TSV tracking real coordinates layout
+    df = pd.read_csv(stream_path, sep="\t")
     
-    ancestry_stream = resolve_single_drs_stream(ancestry_id)
-    print(f"[DRS Stream Unlocked] Ancestry destination -> {ancestry_stream}")
+    # EXACT COLUMN FILTERING: Targets exactly PC1_AVG through PC10_AVG
+    pc_features = [f"PC{i}_AVG" for i in range(1, 11)]
+    X_data = df[pc_features].values
     
-    # Read streaming endpoints or underlying files smoothly
-    df_sscore = pd.read_csv(sscore_stream, sep="\t")
-    df_ancestry = pd.read_csv(ancestry_stream, sep="\t")
-    
-    # Align matrices securely on patient identifier index (#IID)
-    merged_df = pd.merge(df_sscore, df_ancestry, on="#IID")
-    print(f"[Data Pipeline] Aligned matrix completely. Total unified rows: {len(merged_df)}")
-    
-    pc_features = [f"PC{i+1}_Avg" for i in range(20)]
-    X_data = merged_df[pc_features].values
-    y_labels = merged_df["superpop"].apply(lambda x: SUPERPOPS.index(x)).values
+    # Match strings to index positions securely (0-4)
+    y_labels = df["super_pop"].apply(lambda x: SUPERPOPS.index(x) if x in SUPERPOPS else 0).values
     
     X_tensor = torch.tensor(X_data, dtype=torch.float32)
     y_tensor = torch.tensor(y_labels, dtype=torch.long)
     
     return TensorDataset(X_tensor, y_tensor)
 
-# Build execution set
-local_dataset = load_and_align_datasets(args.genotypes_id, args.ancestry_id)
-train_loader = DataLoader(local_dataset, batch_size=16, shuffle=True)
+# Setup infrastructure
+local_dataset = load_unified_dataset(args.drs_id)
+train_loader = DataLoader(local_dataset, batch_size=32, shuffle=True)
 
-net = AncestryNet()
+# Explicitly instantiate network model architecture dimension boundaries to 10
+net = AncestryNet(input_dim=10)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), lr=0.005)
 
@@ -76,14 +64,13 @@ class Client(fl.client.NumPyClient):
         set_parameters(net, parameters)
         net.train()
         running_loss = 0.0
-        for epoch in range(3):
-            for X_batch, y_batch in train_loader:
-                optimizer.zero_grad()
-                loss = criterion(net(X_batch), y_batch)
-                loss.backward()
-                optimizer.step()
-                running_loss += loss.item()
-        return get_parameters(net), len(train_loader.dataset), {"loss": running_loss / len(train_loader)}
+        for X_batch, y_batch in train_loader:
+            optimizer.zero_grad()
+            loss = criterion(net(X_batch), y_batch)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+        return get_parameters(net), len(local_dataset), {"loss": running_loss / len(train_loader)}
 
     def evaluate(self, parameters, config):
         set_parameters(net, parameters)
@@ -94,10 +81,8 @@ class Client(fl.client.NumPyClient):
                 outputs = net(X_batch)
                 loss += criterion(outputs, y_batch).item()
                 correct += (torch.max(outputs, 1)[1] == y_batch).sum().item()
-        
-        accuracy = correct / len(train_loader.dataset)
-        print(f"--> [Node {args.client_id} Metrics] Accuracy: {accuracy * 100:.2f}%")
-        return float(loss/len(train_loader)), len(train_loader.dataset), {"accuracy": float(accuracy)}
+        accuracy = correct / len(local_dataset)
+        return float(loss / len(train_loader)), len(local_dataset), {"accuracy": float(accuracy)}
 
 if __name__ == "__main__":
     fl.client.start_numpy_client(server_address="127.0.0.1:8080", client=Client())
