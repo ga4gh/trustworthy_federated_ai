@@ -6,7 +6,7 @@ from collections import OrderedDict
 SUPERPOPS = ["AFR", "AMR", "EAS", "EUR", "SAS"]
 
 class AncestryNet(nn.Module):
-    def __init__(self, input_dim=10, num_classes=5):  # Crucial: Must be 10 everywhere!
+    def __init__(self, input_dim=10, num_classes=5):  # 10 principal components!
         super(AncestryNet, self).__init__()
         self.fc_layer = nn.Sequential(
             nn.Linear(input_dim, 32),
