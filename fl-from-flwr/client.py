@@ -5,7 +5,7 @@ import requests
 import pandas as pd
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, random_split
 import flwr as fl
 from model import AncestryNet, get_parameters, set_parameters, SUPERPOPS
 from fl_metrics_logger import log_row
@@ -17,6 +17,12 @@ parser.add_argument("--site-name", type=str, default=None,
                           "'site_<client-id>' if omitted.")
 parser.add_argument("--genotypes-id", type=str, required=True, help="DRS ID of the sscore file")
 parser.add_argument("--ancestry-id", type=str, required=True, help="DRS ID of the tsv file")
+parser.add_argument("--val-fraction", type=float, default=0.2,
+                     help="Fraction of this site's local data held out for evaluation. "
+                          "Evaluating on the same rows used for training (the previous "
+                          "behavior) reports training accuracy, not generalization -- "
+                          "with only a few hundred points per site that hits ~100% almost "
+                          "immediately and tells you nothing.")
 args = parser.parse_args()
 
 SITE_NAME = args.site_name or f"site_{args.client_id}"
@@ -66,7 +72,7 @@ def load_and_align_datasets(genotypes_id, ancestry_id):
     df_ancestry = pd.read_csv(ancestry_stream, sep="\t")
     
     # Align matrices securely on patient identifier index (IID)
-    merged_df = pd.merge(df_sscore.drop(columns=["super_pop"]), df_ancestry, on="IID")
+    merged_df = pd.merge(df_sscore.drop(columns="super_pop"), df_ancestry, on="IID")
     print(f"[Data Pipeline] Aligned matrix completely. Total unified rows: {len(merged_df)}")
     
     pc_features = [f"PC{i+1}_AVG" for i in range(10)]
@@ -80,13 +86,25 @@ def load_and_align_datasets(genotypes_id, ancestry_id):
 
 # Build execution set
 local_dataset = load_and_align_datasets(args.genotypes_id, args.ancestry_id)
-train_loader = DataLoader(local_dataset, batch_size=16, shuffle=True)
+
+# Real held-out split: train on train_subset, evaluate (and report classwise
+# accuracy) ONLY on val_subset. Without this, evaluate() below would just be
+# scoring the model on rows it already memorized during fit().
+n_val = max(1, int(len(local_dataset) * args.val_fraction))
+n_train = len(local_dataset) - n_val
+train_subset, val_subset = random_split(
+    local_dataset, [n_train, n_val], generator=torch.Generator().manual_seed(42)
+)
+train_loader = DataLoader(train_subset, batch_size=16, shuffle=True)
+val_loader = DataLoader(val_subset, batch_size=16, shuffle=False)
+print(f"[{SITE_NAME}] local split: {n_train} train / {n_val} val individuals")
 
 # log this site's class composition once, up front -- this is what step 3's
-# size-vs-classwise-accuracy table needs per site
+# size-vs-classwise-accuracy table needs per site. Logged on the FULL local
+# dataset (train+val combined) since that's the site's true population.
 _labels = local_dataset.tensors[1]
 _site_class_counts = {SUPERPOPS[c]: int((_labels == c).sum()) for c in range(len(SUPERPOPS))}
-print(f"[{SITE_NAME}] class counts: {_site_class_counts}")
+print(f"[{SITE_NAME}] class counts (train+val): {_site_class_counts}")
 log_row(
     os.path.join(RESULTS_DIR, "fl_site_sizes.csv"),
     ["site"] + SUPERPOPS + ["total"],
@@ -100,8 +118,10 @@ optimizer = torch.optim.Adam(net.parameters(), lr=0.005)
 
 def classwise_accuracy(y_true, y_pred):
     """Per-superpopulation accuracy + support count. Classes absent from this
-    site's local data get accuracy=None rather than a misleading 0.0 or NaN
-    that would otherwise quietly bias the global average in plot_results.py."""
+    site's VAL split get accuracy=None rather than a misleading 0.0 or NaN
+    that would otherwise quietly bias the global average in plot_results.py.
+    With small per-site val splits, a class can easily have zero val examples
+    even if it's present in the site's training data."""
     accs, counts = {}, {}
     for c, pop in enumerate(SUPERPOPS):
         mask = y_true == c
@@ -144,7 +164,7 @@ class Client(fl.client.NumPyClient):
         loss, correct = 0.0, 0
         all_preds, all_true = [], []
         with torch.no_grad():
-            for X_batch, y_batch in train_loader:
+            for X_batch, y_batch in val_loader:
                 outputs = net(X_batch)
                 loss += criterion(outputs, y_batch).item()
                 preds = torch.max(outputs, 1)[1]
@@ -152,14 +172,14 @@ class Client(fl.client.NumPyClient):
                 all_preds.append(preds)
                 all_true.append(y_batch)
 
-        accuracy = correct / len(train_loader.dataset)
-        avg_loss = loss / len(train_loader)
+        accuracy = correct / len(val_loader.dataset)
+        avg_loss = loss / len(val_loader)
 
         all_preds = torch.cat(all_preds)
         all_true = torch.cat(all_true)
         class_accs, class_counts = classwise_accuracy(all_true, all_preds)
 
-        print(f"--> [{SITE_NAME} Metrics] Accuracy: {accuracy * 100:.2f}% | Loss: {avg_loss:.4f}")
+        print(f"--> [{SITE_NAME} Metrics, held-out val] Accuracy: {accuracy * 100:.2f}% | Loss: {avg_loss:.4f}")
         print(f"    Classwise: " + " ".join(
             f"{p}={class_accs[p]*100:.1f}%(n={class_counts[p]})" if class_accs[p] is not None
             else f"{p}=n/a(n=0)" for p in SUPERPOPS
@@ -167,12 +187,12 @@ class Client(fl.client.NumPyClient):
 
         _round_counter["evaluate"] += 1
         row = {"round": _round_counter["evaluate"], "phase": "evaluate", "loss": avg_loss,
-               "accuracy": accuracy, "num_examples": len(train_loader.dataset)}
+               "accuracy": accuracy, "num_examples": len(val_loader.dataset)}
         row.update({f"acc_{p}": class_accs[p] for p in SUPERPOPS})
         row.update({f"n_{p}": class_counts[p] for p in SUPERPOPS})
         log_row(CLIENT_METRICS_CSV, FIELDNAMES, row)
 
-        return float(avg_loss), len(train_loader.dataset), {"accuracy": float(accuracy)}
+        return float(avg_loss), len(val_loader.dataset), {"accuracy": float(accuracy)}
 
 if __name__ == "__main__":
     fl.client.start_numpy_client(server_address="127.0.0.1:8080", client=Client())
