@@ -1,0 +1,25 @@
+__pycache__/
+
+.vscode/
+
+# =========================
+# PyTorch
+# =========================
+*.pt
+*.pth
+*.ckpt
+checkpoints/
+models/
+saved_models/
+
+
+# =========================
+# Flower / Federated Learning
+# =========================
+flower_logs/
+flwr_logs/
+client_logs/
+server_logs/
+simulation_outputs/
+
+

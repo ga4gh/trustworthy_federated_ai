@@ -15,8 +15,10 @@ parser.add_argument("--client-id", type=int, required=True, help="1, 2, 3, or 4"
 parser.add_argument("--site-name", type=str, default=None,
                      help="Site label used in result CSVs, e.g. site_a. Defaults to "
                           "'site_<client-id>' if omitted.")
-parser.add_argument("--genotypes-id", type=str, required=True, help="DRS ID of the sscore file")
-parser.add_argument("--ancestry-id", type=str, required=True, help="DRS ID of the tsv file")
+parser.add_argument("--unified-id", type=str, required=True,
+                     help="DRS ID of this site's unified_data.tsv (as produced by "
+                          "merge_flan_data_4sites.py -- genotypes + ancestry already "
+                          "merged into one file, labeled with a 'super_pop' column).")
 parser.add_argument("--val-fraction", type=float, default=0.2,
                      help="Fraction of this site's local data held out for evaluation. "
                           "Evaluating on the same rows used for training (the previous "
@@ -57,35 +59,32 @@ def resolve_single_drs_stream(object_id):
         
     return stream_url
 
-def load_and_align_datasets(genotypes_id, ancestry_id):
-    print("\n[GA4GH DRS Orchestration] Resolving streaming vectors...")
-    
-    # Call the endpoints to fetch data locations
-    sscore_stream = resolve_single_drs_stream(genotypes_id)
-    print(f"[DRS Stream Unlocked] Genotypes destination -> {sscore_stream}")
-    
-    ancestry_stream = resolve_single_drs_stream(ancestry_id)
-    print(f"[DRS Stream Unlocked] Ancestry destination -> {ancestry_stream}")
-    
-    # Read streaming endpoints or underlying files smoothly
-    df_sscore = pd.read_csv(sscore_stream, sep="\t")
-    df_ancestry = pd.read_csv(ancestry_stream, sep="\t")
-    
-    # Align matrices securely on patient identifier index (IID)
-    merged_df = pd.merge(df_sscore.drop(columns="super_pop"), df_ancestry, on="IID")
-    print(f"[Data Pipeline] Aligned matrix completely. Total unified rows: {len(merged_df)}")
-    
-    pc_features = [f"PC{i+1}_AVG" for i in range(10)]
-    X_data = merged_df[pc_features].values
-    y_labels = merged_df["super_pop"].apply(lambda x: SUPERPOPS.index(x)).values
-    
+def load_unified_dataset(unified_id):
+    """unified_data.tsv (from merge_flan_data_4sites.py) is already merged --
+    one row per individual, PC columns + a 'super_pop' label column. No second
+    DRS object, no client-side pd.merge needed."""
+    print("\n[GA4GH DRS Orchestration] Resolving streaming vector...")
+
+    unified_stream = resolve_single_drs_stream(unified_id)
+    print(f"[DRS Stream Unlocked] Unified data destination -> {unified_stream}")
+
+    df = pd.read_csv(unified_stream, sep="\t")
+    print(f"[Data Pipeline] Loaded unified site data. Total rows: {len(df)}")
+
+    pc_cols = [c for c in df.columns if c.upper().startswith("PC") and c.upper().endswith("_AVG")]
+    pc_cols = sorted(pc_cols, key=lambda c: int(''.join(filter(str.isdigit, c))))
+
+    X_data = df[pc_cols].values
+    # merge_flan_data_4sites.py writes the label column as 'super_pop', not 'superpop'
+    y_labels = df["super_pop"].apply(lambda x: SUPERPOPS.index(x)).values
+
     X_tensor = torch.tensor(X_data, dtype=torch.float32)
     y_tensor = torch.tensor(y_labels, dtype=torch.long)
-    
+
     return TensorDataset(X_tensor, y_tensor)
 
 # Build execution set
-local_dataset = load_and_align_datasets(args.genotypes_id, args.ancestry_id)
+local_dataset = load_unified_dataset(args.unified_id)
 
 # Real held-out split: train on train_subset, evaluate (and report classwise
 # accuracy) ONLY on val_subset. Without this, evaluate() below would just be
