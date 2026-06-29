@@ -21,5 +21,5 @@ flwr_logs/
 client_logs/
 server_logs/
 simulation_outputs/
-
+fl_work/
 
