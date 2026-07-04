@@ -42,11 +42,17 @@ def resolve_single_drs_stream(object_id):
     Performs full two-step GA4GH lookup to resolve an exact, streamable byte URL.
     """
     meta_url = f"http://localhost:4500/ga4gh/drs/v1/objects/{object_id}"
+
+    if object_id=="site_3_unified" or object_id == "site_4_unified":
+        meta_url = f"http://localhost:4502/ga4gh/drs/v1/objects/{object_id}"
     try:
         meta_resp = requests.get(meta_url, timeout=5).json()
         access_id = meta_resp["access_methods"][0]["access_id"]
         
         access_url = f"http://localhost:4500/ga4gh/drs/v1/objects/{object_id}/access/{access_id}"
+        
+        if object_id=="site_3_unified" or object_id == "site_4_unified":
+            access_url = f"http://localhost:4502/ga4gh/drs/v1/objects/{object_id}/access/{access_id}"
         stream_url = requests.get(access_url, timeout=5).json()["url"]
         
         if stream_url.startswith("file://"):

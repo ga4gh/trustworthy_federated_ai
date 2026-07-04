@@ -3,7 +3,7 @@ import os
 import subprocess
 import sys
 
-ROUNDS = 15
+ROUNDS = 10
 NUM_CLIENTS = 4
 ARTIFACTS_DIR = "./checkpoints"
 
@@ -21,8 +21,22 @@ def main():
     print("=========================================================================")
     print("   Starting Automated Trusted Federated AI Production-Grade Sandbox Flow")
     print("=========================================================================")
-    
+
     os.makedirs(ARTIFACTS_DIR, exist_ok=True)
+
+    # Step 0: Run centralized baseline FIRST (same data, same rounds, for fair comparison)
+    print("\n--- Phase 0: Running Centralized Baseline (comparison reference) ---")
+    baseline_cmd = (
+        f"python baseline_train.py "
+        f"--num-clients {NUM_CLIENTS} "
+        f"--rounds {ROUNDS} "
+        f"--epochs-per-round 5 "
+        f"--batch-size 16 "
+        f"--lr 0.01 "
+        f"--artifacts-dir {ARTIFACTS_DIR} "
+        f"--metrics-path {ARTIFACTS_DIR}/baseline_metrics.csv"
+    )
+    run_cmd(baseline_cmd)
 
     # Step 1: Bootstrap baseline global matrix model checkpoint (Round 0 initialization)
     print("\n--- Phase 0: Launching Server Initialization ---")
@@ -41,9 +55,8 @@ def main():
         for c_id in range(1, NUM_CLIENTS + 1):
             client_out = os.path.join(ARTIFACTS_DIR, f"client_{c_id}_round_{r}.pt")
             unified_id = f"site_{c_id}_unified"
-            
+
             print(f"\n[Automator Launcher] Spawning Worker Node Payload for Client {c_id}")
-            # FIXED: Argument flag changed from --drs-id to --unified-id to match client.py
             client_cmd = (
                 f"python client.py --client-id {c_id} --unified-id {unified_id} "
                 f"--global-weights-path {current_global_weights} --output-weights-path {client_out} "
