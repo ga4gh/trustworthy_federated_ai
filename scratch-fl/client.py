@@ -17,6 +17,7 @@ parser.add_argument("--unified-id", type=str, required=True,
                      help="DRS ID of this site's unified_data.tsv inside the Starter Kit database.")
 parser.add_argument("--global-weights-path", type=str, required=True, help="Input global master checkpoint path.")
 parser.add_argument("--output-weights-path", type=str, required=True, help="Target path for finalized client checkpoint.")
+parser.add_argument("--results-dir", type=str, default="./results", help="Writeable storage directory")
 parser.add_argument("--val-fraction", type=float, default=0.2, help="Fraction of local dataset held out for verification.")
 parser.add_argument("--epochs", type=int, default=5, help="Number of local training epochs.")
 parser.add_argument("--batch-size", type=int, default=16, help="Mini-batch processing size limits.")
@@ -24,7 +25,7 @@ parser.add_argument("--lr", type=float, default=0.01, help="Adam step optimizer 
 args = parser.parse_args()
 
 SITE_NAME = args.site_name or f"site_{args.client_id}"
-RESULTS_DIR = os.path.abspath("./results")
+RESULTS_DIR = os.path.abspath(args.results_dir)
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 CLIENT_METRICS_CSV = os.path.join(RESULTS_DIR, f"fl_client_{SITE_NAME}_metrics.csv")
@@ -41,18 +42,18 @@ def resolve_single_drs_stream(object_id):
     """
     Performs full two-step GA4GH lookup to resolve an exact, streamable byte URL.
     """
-    meta_url = f"http://localhost:4500/ga4gh/drs/v1/objects/{object_id}"
+    meta_url = f"http://172.17.0.1:4500/ga4gh/drs/v1/objects/{object_id}"
 
     if object_id=="site_3_unified" or object_id == "site_4_unified":
-        meta_url = f"http://localhost:4502/ga4gh/drs/v1/objects/{object_id}"
+        meta_url = f"http://172.17.0.1:4502/ga4gh/drs/v1/objects/{object_id}"
     try:
         meta_resp = requests.get(meta_url, timeout=5).json()
         access_id = meta_resp["access_methods"][0]["access_id"]
         
-        access_url = f"http://localhost:4500/ga4gh/drs/v1/objects/{object_id}/access/{access_id}"
+        access_url = f"http://172.17.0.1:4500/ga4gh/drs/v1/objects/{object_id}/access/{access_id}"
         
         if object_id=="site_3_unified" or object_id == "site_4_unified":
-            access_url = f"http://localhost:4502/ga4gh/drs/v1/objects/{object_id}/access/{access_id}"
+            access_url = f"http://172.17.0.1:4502/ga4gh/drs/v1/objects/{object_id}/access/{access_id}"
         stream_url = requests.get(access_url, timeout=5).json()["url"]
         
         if stream_url.startswith("file://"):
@@ -79,6 +80,15 @@ def load_unified_dataset(unified_id):
     unified_stream = resolve_single_drs_stream(unified_id)
     print(f"[{SITE_NAME} Data Ingestion] Stream resolution successful -> {unified_stream}")
 
+
+    if "localhost" in unified_stream and not os.path.exists("/.dockerenv"):
+        # We are on the bare host machine, let localhost remain localhost
+        pass
+    else:
+        # We are inside a container, rewrite loopbacks to map to the host system gateway
+        unified_stream = unified_stream.replace("localhost", "172.17.0.1").replace("127.0.0.1", "172.17.0.1")
+
+        
     df = pd.read_csv(unified_stream, sep="\t")
     
     # Isolate and sort the top 10 Eigenvector Principal Component fields cleanly
