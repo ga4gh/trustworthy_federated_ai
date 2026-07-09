@@ -24,3 +24,6 @@ simulation_outputs/
 fl_work/
 metrics/
 scratch-fl/data/
+scratch-fl/plots/
+results/
+tmp/

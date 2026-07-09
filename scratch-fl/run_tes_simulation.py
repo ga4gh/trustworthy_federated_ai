@@ -3,15 +3,16 @@ import os
 import sys
 import time
 import tes  # Core GA4GH TES Python SDK Client Wrapper
+import threading
 
-ROUNDS = 15
+ROUNDS = 5
 NUM_CLIENTS = 4
 IMAGE_TAG = "trustworthy-fed-ai:v1"
 
 HOST_SHARED_DIR = os.path.abspath("./tmp/tes-workspace")
 os.makedirs(HOST_SHARED_DIR, exist_ok=True)
 
-# Connect the py-tes client directly to our freshly compiled Funnel socket port
+# Connect the py-tes client directly to Funnel socket port
 client = tes.HTTPClient("http://localhost:8000")
 
 def execute_and_wait(task_object):
@@ -68,7 +69,9 @@ def main():
         print(f"   DISPATCHING COMPUTE TASKS FOR FEDERATED TRAIN ROUND {r} / {ROUNDS}")
         print(f"#################################################################")
 
-        # Step 1: Run Client Silo Nodes concurrently or sequentially
+        # Step 1: Run Client Silo Nodes concurrently using Threads
+        threads = []
+        
         for c_id in range(1, NUM_CLIENTS + 1):
             print(f"\n[Orchestrator] Building Isolated Hospital Node Job Profile: Client {c_id}")
             client_task = tes.Task(
@@ -102,7 +105,15 @@ def main():
                     )
                 ]
             )
-            execute_and_wait(client_task)
+            
+            # Create a thread for each client task so they submit and poll concurrently
+            t = threading.Thread(target=execute_and_wait, args=(client_task,))
+            threads.append(t)
+            t.start() # Starts execution asynchronously
+
+        # Block the main orchestrator loop until ALL client threads have completed
+        for t in threads:
+            t.join()
 
         # Step 2: Trigger Central Weight Averaging Task
         print(f"\n[Orchestrator] Gathering check-ins to spin up Central FedAvg Aggregator")
