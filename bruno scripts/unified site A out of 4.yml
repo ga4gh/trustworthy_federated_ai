@@ -1,0 +1,47 @@
+info:
+  name: unified site A out of 4
+  type: http
+  seq: 24
+
+http:
+  method: post
+  url: http://localhost:4501/admin/ga4gh/drs/v1/objects
+  headers:
+    - name: sec-ch-ua-platform
+      value: '"Linux"'
+    - name: Referer
+      value: http://localhost:8989/
+    - name: User-Agent
+      value: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36
+    - name: Accept
+      value: application/json, text/plain, */*
+    - name: sec-ch-ua
+      value: '"Chromium";v="146", "Not-A.Brand";v="24", "Google Chrome";v="146"'
+    - name: Content-Type
+      value: application/json;charset=UTF-8
+    - name: sec-ch-ua-mobile
+      value: ?0
+  body:
+    type: json
+    data: |-
+      {
+        "id": "site_1_unified",
+        "description": "unified 1000 Genomes Phase 3 PC matrix for Node 1",
+        "name": "unified_data.tsv",
+        "version": "1.0.0",
+        "is_bundle": false,
+        "size": 85000,
+        "checksums": [{"checksum": "83709ab2755fed31503cd34bd7a58a69", "type": "md5"}],
+        "file_access_objects": [
+          {
+            "path": "/tmp/local_biobanks/site_a/unified_data.tsv"
+          }
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
