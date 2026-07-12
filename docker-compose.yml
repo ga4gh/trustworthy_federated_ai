@@ -1,0 +1,139 @@
+services:
+  # ==========================================
+  # CENTRAL AGGREGATOR TIER
+  # ==========================================
+  tes-central:
+    image: ohsucompbio/funnel:latest
+    command: server run --config /etc/funnel/funnel.config.yaml
+    ports:
+      - "8000:8000"
+    networks:
+      - fed-network
+    volumes:
+      - ./shared_workspace:/workspace 
+      - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+  drs-central:
+    image: ga4gh/ga4gh-starter-kit-drs:0.3.2
+    ports:
+      - "4500:4500"
+      - "4501:4501"
+    networks:
+      - fed-network
+    volumes:
+      - ./data/central:/data
+  # ==========================================
+  # CLIENT SITE A (TES + DRS)
+  # ==========================================
+  tes-site-a:
+    image: ohsucompbio/funnel:latest
+    command: server run --config /etc/funnel/funnel.config.yaml
+    ports:
+      - "8001:8000"
+    networks:
+      - fed-network
+    volumes:
+      - ./shared_workspace:/workspace
+      - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+
+  drs-site-a:
+    image: ga4gh/ga4gh-starter-kit-drs:0.3.2
+    ports:
+      - "4502:4500"
+      - "4503:4501" 
+    networks:
+      - fed-network
+    volumes:
+      - ./data/site_a:/data 
+
+  # ==========================================
+  # CLIENT SITE B (TES + DRS)
+  # ==========================================
+  tes-site-b:
+    image: ohsucompbio/funnel:latest
+    command: server run --config /etc/funnel/funnel.config.yaml
+    ports:
+      - "8002:8000"
+    networks:
+      - fed-network
+    volumes:
+      - ./shared_workspace:/workspace
+      - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+
+  drs-site-b:
+    image: ga4gh/ga4gh-starter-kit-drs:0.3.2
+    ports:
+      - "4504:4500"
+      - "4505:4501"
+    networks:
+      - fed-network
+    volumes:
+      - ./data/site_b:/data
+
+  # ==========================================
+  # CLIENT SITE C (TES + DRS)
+  # ==========================================
+  tes-site-c:
+    image: ohsucompbio/funnel:latest
+    command: server run --config /etc/funnel/funnel.config.yaml
+    ports:
+      - "8003:8000"
+    networks:
+      - fed-network
+    volumes:
+      - ./shared_workspace:/workspace
+      - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+
+  drs-site-c:
+    image: ga4gh/ga4gh-starter-kit-drs:0.3.2
+    ports:
+      - "4506:4500"
+      - "4507:4501"
+    networks:
+      - fed-network
+    volumes:
+      - ./data/site_c:/data
+      
+  # ==========================================
+  # CLIENT SITE D (TES + DRS)
+  # ==========================================
+  tes-site-d:
+    image: ohsucompbio/funnel:latest
+    command: server run --config /etc/funnel/funnel.config.yaml
+    ports:
+      - "8004:8000"
+    networks:
+      - fed-network
+    volumes:
+      - ./shared_workspace:/workspace
+      - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+
+  drs-site-d:
+    image: ga4gh/ga4gh-starter-kit-drs:0.3.2
+    ports:
+      - "4508:4500"
+      - "4509:4501"
+    networks:
+      - fed-network
+    volumes:
+      - ./data/site_d:/data
+
+  # ==========================================
+  # AUTOMATED DRS SEEDER
+  # ==========================================
+  drs-seeder:
+    image: curlimages/curl:latest
+    depends_on:
+      - drs-central
+      - drs-site-a
+      - drs-site-b
+      - drs-site-c
+      - drs-site-d
+    networks:
+      - fed-network
+    volumes:
+      - ./seed/seed_drs.sh:/seed_drs.sh
+    entrypoint: ["/bin/sh", "/seed_drs.sh"]
+
+networks:
+  fed-network:
+    driver: bridge

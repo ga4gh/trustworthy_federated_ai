@@ -1,0 +1,8 @@
+Server:
+  HostName: localhost
+  HTTPPort: '8000'
+LocalStorage:
+  AllowedDirs:
+  - /tmp/tes-workspace
+  - .
+Compute: local
