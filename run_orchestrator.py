@@ -20,6 +20,15 @@ TES_CLIENTS = {
     'd': tes.HTTPClient("http://localhost:8004")
 }
 
+HOST_GATEWAY = "172.17.0.1"
+
+DRS_ENDPOINTS = {
+    "a": f"http://{HOST_GATEWAY}:4502",
+    "b": f"http://{HOST_GATEWAY}:4504",
+    "c": f"http://{HOST_GATEWAY}:4506",
+    "d": f"http://{HOST_GATEWAY}:4508",
+}
+
 def execute_and_wait(task_object, tes_client, node_name="Unknown"):
     """Submits tasks to a specific Funnel endpoint and polls for completion."""
     task_id = tes_client.create_task(task_object)
@@ -89,6 +98,7 @@ def main():
                         command=[
                             "python", "client.py",
                             "--site-id", site,
+                            "--drs-endpoint", DRS_ENDPOINTS[site],
                             "--global-weights-path", "/workspace/checkpoints/global_model_current.pt",
                             "--output-weights-path", f"/workspace/checkpoints/client_{site}_round_{r}.pt",
                             "--results-dir", "/workspace/checkpoints",
