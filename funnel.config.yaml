@@ -4,5 +4,8 @@ Server:
 LocalStorage:
   AllowedDirs:
   - /tmp/tes-workspace
+  - /tmp
+  - /workspace
+  - /data
   - .
 Compute: local

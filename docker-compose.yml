@@ -3,7 +3,10 @@ services:
   # CENTRAL AGGREGATOR TIER
   # ==========================================
   tes-central:
-    image: ohsucompbio/funnel:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.funnel
+    image: quay.io/ohsu-comp-bio/funnel
     command: server run --config /etc/funnel/funnel.config.yaml
     ports:
       - "8000:8000"
@@ -12,6 +15,8 @@ services:
     volumes:
       - ./shared_workspace:/workspace 
       - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /opt/funnel/funnel-work-dir:/opt/funnel/funnel-work-dir
+      - /var/run/docker.sock:/var/run/docker.sock
   drs-central:
     image: ga4gh/ga4gh-starter-kit-drs:0.3.2
     ports:
@@ -25,7 +30,7 @@ services:
   # CLIENT SITE A (TES + DRS)
   # ==========================================
   tes-site-a:
-    image: ohsucompbio/funnel:latest
+    image: quay.io/ohsu-comp-bio/funnel
     command: server run --config /etc/funnel/funnel.config.yaml
     ports:
       - "8001:8000"
@@ -34,6 +39,7 @@ services:
     volumes:
       - ./shared_workspace:/workspace
       - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
 
   drs-site-a:
     image: ga4gh/ga4gh-starter-kit-drs:0.3.2
@@ -49,15 +55,19 @@ services:
   # CLIENT SITE B (TES + DRS)
   # ==========================================
   tes-site-b:
-    image: ohsucompbio/funnel:latest
+    image: quay.io/ohsu-comp-bio/funnel
     command: server run --config /etc/funnel/funnel.config.yaml
     ports:
       - "8002:8000"
     networks:
       - fed-network
+    build:
+      context: .
+      dockerfile: Dockerfile.funnel
     volumes:
       - ./shared_workspace:/workspace
       - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
 
   drs-site-b:
     image: ga4gh/ga4gh-starter-kit-drs:0.3.2
@@ -73,7 +83,7 @@ services:
   # CLIENT SITE C (TES + DRS)
   # ==========================================
   tes-site-c:
-    image: ohsucompbio/funnel:latest
+    image: quay.io/ohsu-comp-bio/funnel
     command: server run --config /etc/funnel/funnel.config.yaml
     ports:
       - "8003:8000"
@@ -82,6 +92,7 @@ services:
     volumes:
       - ./shared_workspace:/workspace
       - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
 
   drs-site-c:
     image: ga4gh/ga4gh-starter-kit-drs:0.3.2
@@ -97,7 +108,7 @@ services:
   # CLIENT SITE D (TES + DRS)
   # ==========================================
   tes-site-d:
-    image: ohsucompbio/funnel:latest
+    image: quay.io/ohsu-comp-bio/funnel
     command: server run --config /etc/funnel/funnel.config.yaml
     ports:
       - "8004:8000"
@@ -106,6 +117,7 @@ services:
     volumes:
       - ./shared_workspace:/workspace
       - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
 
   drs-site-d:
     image: ga4gh/ga4gh-starter-kit-drs:0.3.2
