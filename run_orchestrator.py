@@ -65,7 +65,7 @@ def main():
         outputs=[
             tes.Output(
                 path="/workspace/checkpoints/global_model_round_0.pt",
-                url=f"file://{TES_SHARED_DIR}/checkpoints/global_model_round_0.pt",
+                url=f"s3://fl-models/global_model_round_0.pt",
                 type="FILE"
             )
         ]
@@ -87,8 +87,8 @@ def main():
                 name=f"Client_Site_{site.upper()}_Round_{r}",
                 inputs=[
                     tes.Input(
-                        path="/workspace/checkpoints/global_model_current.pt",
-                        url=f"file://{TES_SHARED_DIR}/checkpoints/global_model_round_{r-1}.pt",
+                        url=f"s3://fl-models/global_model_round_{r-1}.pt",
+                        path=f"/workspace/checkpoints/global_model_round_{r-1}.pt",
                         type="FILE"
                     )
                 ],
@@ -99,7 +99,7 @@ def main():
                             "python", "client.py",
                             "--site-id", site,
                             "--drs-endpoint", DRS_ENDPOINTS[site],
-                            "--global-weights-path", "/workspace/checkpoints/global_model_current.pt",
+                            "--global-weights-path", f"/workspace/checkpoints/global_model_round_{r-1}.pt",
                             "--output-weights-path", f"/workspace/checkpoints/client_{site}_round_{r}.pt",
                             "--results-dir", "/workspace/checkpoints",
                             "--epochs", "5"
@@ -108,13 +108,13 @@ def main():
                 ],
                 outputs=[
                     tes.Output(
+                        url=f"s3://fl-models/client_{site}_round_{r}.pt",
                         path=f"/workspace/checkpoints/client_{site}_round_{r}.pt",
-                        url=f"file://{TES_SHARED_DIR}/checkpoints/client_{site}_round_{r}.pt",
                         type="FILE"
                     ),
                     tes.Output(
                         path=f"/workspace/checkpoints/fl_client_site_{site}_metrics.csv",
-                        url=f"file://{TES_SHARED_DIR}/checkpoints/fl_client_site_{site}_metrics.csv",
+                        url=f"s3://fl-models/fl_client_site_{site}_metrics.csv",
                         type="FILE"
                     )
                 ]
@@ -133,7 +133,7 @@ def main():
         server_inputs = [
             tes.Input(
                 path=f"/workspace/checkpoints/client_{site}_round_{r}.pt",
-                url=f"file://{TES_SHARED_DIR}/checkpoints/client_{site}_round_{r}.pt",
+                url=f"s3://fl-models/client_{site}_round_{r}.pt",
                 type="FILE"
             ) for site in SITES
         ]
@@ -156,12 +156,12 @@ def main():
             outputs=[
                 tes.Output(
                     path=f"/workspace/checkpoints/global_model_round_{r}.pt",
-                    url=f"file://{TES_SHARED_DIR}/checkpoints/global_model_round_{r}.pt",
+                    url=f"s3://fl-models/global_model_round_{r}.pt",
                     type="FILE"
                 ),
                 tes.Output(
                     path="/workspace/checkpoints/server_metrics.csv",
-                    url=f"file://{TES_SHARED_DIR}/server_metrics.csv",
+                    url=f"s3://fl-models/server_metrics.csv",
                     type="FILE"
                 )
             ]
