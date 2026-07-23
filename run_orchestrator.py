@@ -8,6 +8,9 @@ ROUNDS = 5
 SITES = ['a', 'b', 'c', 'd']
 IMAGE_TAG = "trustworthy-fed-ai:v1"
 
+# BUCKET = os.environ["AWS_BUCKET"]
+BUCKET = "fl-models-common-bucket"
+
 # The TES servers find files relative to their internal /workspace mount
 TES_SHARED_DIR = "/workspace" 
 
@@ -65,7 +68,7 @@ def main():
         outputs=[
             tes.Output(
                 path="/workspace/checkpoints/global_model_round_0.pt",
-                url=f"s3://fl-models/global_model_round_0.pt",
+                url=f"s3://{BUCKET}/models/global_model_round_0.pt",
                 type="FILE"
             )
         ]
@@ -87,7 +90,7 @@ def main():
                 name=f"Client_Site_{site.upper()}_Round_{r}",
                 inputs=[
                     tes.Input(
-                        url=f"s3://fl-models/global_model_round_{r-1}.pt",
+                        url=f"s3://{BUCKET}/models/global_model_round_{r-1}.pt",
                         path=f"/workspace/checkpoints/global_model_round_{r-1}.pt",
                         type="FILE"
                     )
@@ -108,13 +111,13 @@ def main():
                 ],
                 outputs=[
                     tes.Output(
-                        url=f"s3://fl-models/client_{site}_round_{r}.pt",
+                        url=f"s3://{BUCKET}/clients/client_{site}_round_{r}.pt",
                         path=f"/workspace/checkpoints/client_{site}_round_{r}.pt",
                         type="FILE"
                     ),
                     tes.Output(
                         path=f"/workspace/checkpoints/fl_client_site_{site}_metrics.csv",
-                        url=f"s3://fl-models/fl_client_site_{site}_metrics.csv",
+                        url=f"s3://{BUCKET}/metrics/fl_client_site_{site}_metrics.csv",
                         type="FILE"
                     )
                 ]
@@ -133,7 +136,7 @@ def main():
         server_inputs = [
             tes.Input(
                 path=f"/workspace/checkpoints/client_{site}_round_{r}.pt",
-                url=f"s3://fl-models/client_{site}_round_{r}.pt",
+                url=f"s3://{BUCKET}/clients/client_{site}_round_{r}.pt",
                 type="FILE"
             ) for site in SITES
         ]
@@ -156,12 +159,12 @@ def main():
             outputs=[
                 tes.Output(
                     path=f"/workspace/checkpoints/global_model_round_{r}.pt",
-                    url=f"s3://fl-models/global_model_round_{r}.pt",
+                    url=f"s3://{BUCKET}/models/global_model_round_{r}.pt",
                     type="FILE"
                 ),
                 tes.Output(
                     path="/workspace/checkpoints/server_metrics.csv",
-                    url=f"s3://fl-models/server_metrics.csv",
+                    url=f"s3://{BUCKET}/metrics/server_metrics.csv",
                     type="FILE"
                 )
             ]

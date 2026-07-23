@@ -8,4 +8,12 @@ LocalStorage:
   - /workspace
   - /data
   - .
+  - ./shared_workspace/
+  - /home/viditkh/GSoC/trustworthy_federated_ai/shared_workspace/checkpoints/
 Compute: local
+
+GenericS3:
+  - Disabled: true
+
+AmazonS3:
+  Disabled: false
