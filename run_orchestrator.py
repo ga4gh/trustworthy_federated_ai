@@ -25,6 +25,10 @@ TES_CLIENTS = {
 
 HOST_GATEWAY = "172.17.0.1"
 
+# Central DRS Endpoint mapping
+CENTRAL_DRS_ENDPOINT = f"http://{HOST_GATEWAY}:4500"
+
+# Site DRS Endpoints mapping
 DRS_ENDPOINTS = {
     "a": f"http://{HOST_GATEWAY}:4502",
     "b": f"http://{HOST_GATEWAY}:4504",
@@ -62,13 +66,24 @@ def main():
         executors=[
             tes.Executor(
                 image=IMAGE_TAG,
-                command=["python", "server.py", "--target-round", "0", "--artifacts-dir", "/workspace/checkpoints", "--metrics-path", "/workspace/checkpoints/server_metrics.csv"]
+                command=[
+                    "python", "server.py", 
+                    "--target-round", "0", 
+                    "--drs-endpoint", CENTRAL_DRS_ENDPOINT,
+                    "--artifacts-dir", "/workspace/checkpoints", 
+                    "--metrics-path", "/workspace/checkpoints/server_metrics_round_0.csv"
+                ]
             )
         ],
         outputs=[
             tes.Output(
                 path="/workspace/checkpoints/global_model_round_0.pt",
                 url=f"s3://{BUCKET}/models/global_model_round_0.pt",
+                type="FILE"
+            ),
+            tes.Output(
+                path="/workspace/checkpoints/server_metrics_round_0.csv",
+                url=f"s3://{BUCKET}/metrics/server_metrics_round_0.csv",
                 type="FILE"
             )
         ]
@@ -117,7 +132,7 @@ def main():
                     ),
                     tes.Output(
                         path=f"/workspace/checkpoints/fl_client_site_{site}_metrics.csv",
-                        url=f"s3://{BUCKET}/metrics/fl_client_site_{site}_metrics.csv",
+                        url=f"s3://{BUCKET}/metrics/fl_client_site_{site}_round_{r}_metrics.csv",
                         type="FILE"
                     )
                 ]
@@ -150,9 +165,10 @@ def main():
                     command=[
                         "python", "server.py",
                         "--target-round", str(r),
+                        "--drs-endpoint", CENTRAL_DRS_ENDPOINT,
                         "--sites", ",".join(SITES),
                         "--artifacts-dir", "/workspace/checkpoints",
-                        "--metrics-path", "/workspace/checkpoints/server_metrics.csv"
+                        "--metrics-path", f"/workspace/checkpoints/server_metrics_round_{r}.csv"
                     ]
                 )
             ],
@@ -163,8 +179,8 @@ def main():
                     type="FILE"
                 ),
                 tes.Output(
-                    path="/workspace/checkpoints/server_metrics.csv",
-                    url=f"s3://{BUCKET}/metrics/server_metrics.csv",
+                    path=f"/workspace/checkpoints/server_metrics_round_{r}.csv",
+                    url=f"s3://{BUCKET}/metrics/server_metrics_round_{r}.csv",
                     type="FILE"
                 )
             ]
