@@ -17,8 +17,9 @@ services:
     networks:
       - fed-network
     volumes:
-      - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
-      - /opt/funnel/funnel-work-dir:/opt/funnel/funnel-work-dir
+      - ./configs/central.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /opt/funnel/central/work-dir:/opt/funnel/central/work-dir
+      - /opt/funnel/central/db:/opt/funnel/central/db
       - /var/run/docker.sock:/var/run/docker.sock
   drs-central:
     image: ga4gh/ga4gh-starter-kit-drs:0.3.2
@@ -44,8 +45,9 @@ services:
     networks:
       - fed-network
     volumes:
-      - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
-      - /tmp/site_a:/opt/funnel/funnel-work-dir
+      - ./configs/site-a.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /opt/funnel/site-a/work-dir:/opt/funnel/site-a/work-dir
+      - /opt/funnel/site-a/db:/opt/funnel/site-a/db
       - /var/run/docker.sock:/var/run/docker.sock
 
   drs-site-a:
@@ -73,9 +75,9 @@ services:
     networks:
       - fed-network
     volumes:
-      - ./shared_workspace:/workspace
-      - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
-      - /tmp/site_b:/opt/funnel/funnel-work-dir
+      - ./configs/site-b.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /opt/funnel/site-b/work-dir:/opt/funnel/site-b/work-dir
+      - /opt/funnel/site-b/db:/opt/funnel/site-b/db
       - /var/run/docker.sock:/var/run/docker.sock
 
   drs-site-b:
@@ -103,8 +105,9 @@ services:
     networks:
       - fed-network
     volumes:
-      - ./shared_workspace:/workspace
-      - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - ./configs/site-c.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /opt/funnel/site-c/work-dir:/opt/funnel/site-c/work-dir
+      - /opt/funnel/site-c/db:/opt/funnel/site-c/db
       - /var/run/docker.sock:/var/run/docker.sock
 
   drs-site-c:
@@ -132,8 +135,9 @@ services:
     networks:
       - fed-network
     volumes:
-      - ./shared_workspace:/workspace
-      - ./funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - ./configs/site-d.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /opt/funnel/site-d/work-dir:/opt/funnel/site-d/work-dir
+      - /opt/funnel/site-d/db:/opt/funnel/site-d/db
       - /var/run/docker.sock:/var/run/docker.sock
 
   drs-site-d:
