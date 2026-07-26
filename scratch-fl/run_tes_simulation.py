@@ -33,7 +33,7 @@ def execute_and_wait(task_object):
             for log in full_log.logs:
                 for ex_log in log.logs:
                     print(f"Container Stack Trace Log Dump:\n{ex_log.stderr}")
-            sys.exit(1)
+os._exit(1)
             
         print(f"    [Polling] Task State: {state}... re-verifying in 3 seconds.")
         time.sleep(3)
