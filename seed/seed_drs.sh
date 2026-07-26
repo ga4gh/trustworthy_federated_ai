@@ -6,15 +6,15 @@ set -e
 echo "Waiting for DRS servers to spin up..."
 
 # Array of all your DRS hosts
-hosts="drs-site-a drs-site-b drs-site-c drs-site-d"
+hosts="drs-central drs-site-a drs-site-b drs-site-c drs-site-d"
 
 for host in $hosts; do
   echo "Checking $host..."
-  until curl --silent --output /dev/null http://$host:4500/ga4gh/drs/v1/service-info; do
+  until curl --silent --fail --output /dev/null "http://$host:4500/ga4gh/drs/v1/service-info"; do
     printf '.'
     sleep 1
   done
-  echo "\n$host is up!"
+  printf '\n%s is up!\n' "$host"
 done
 
 echo "All DRS servers are ready. Starting data seeding..."
