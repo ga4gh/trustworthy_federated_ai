@@ -1,6 +1,7 @@
 __pycache__/
-
+data/
 .vscode/
+.env 
 
 # =========================
 # PyTorch
@@ -11,7 +12,7 @@ __pycache__/
 checkpoints/
 models/
 saved_models/
-
+tmp_checkpoints/
 
 # =========================
 # Flower / Federated Learning
@@ -21,5 +22,28 @@ flwr_logs/
 client_logs/
 server_logs/
 simulation_outputs/
+fl_work/
+metrics/
+scratch-fl/data/
+scratch-fl/plots/
+results/
+tmp/
+minio-data/
 
-
+bruno scripts/access s3 try1.yml
+bruno scripts/ancestry site A out of 4.yml
+bruno scripts/ancestry site B out of 4.yml
+bruno scripts/ancestry site C out of 4.yml
+bruno scripts/ancestry site D out of 4.yml
+bruno scripts/genotype site A out of 4.yml
+bruno scripts/genotype site B out of 4.yml
+bruno scripts/genotype site C out of 4.yml
+bruno scripts/genotype site D out of 4.yml
+bruno scripts/lalani phenopackets.yml
+bruno scripts/status WES run id.yml
+bruno scripts/test workflow run.yml
+bruno scripts/unified creating 1000 genomes object.yml
+bruno scripts/unified creating 1000 genomes site a.yml
+bruno scripts/unified site B out of 4.yml
+bruno scripts/unified site C out of 4.yml
+bruno scripts/unified site D out of 4.yml
