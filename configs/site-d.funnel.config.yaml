@@ -9,7 +9,7 @@ LocalStorage:
   - /data
   - .
   - ./shared_workspace/
-  - /home/viditkh/GSoC/trustworthy_federated_ai/shared_workspace/checkpoints/
+
 Compute: local
 
 GenericS3:
