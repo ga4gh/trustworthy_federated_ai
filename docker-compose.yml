@@ -33,7 +33,7 @@ services:
   # ==========================================
   # CLIENT SITE A (TES + DRS)
   # ==========================================
-  tes-site-a:
+  tes-site-1:
     environment:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -45,12 +45,12 @@ services:
     networks:
       - fed-network
     volumes:
-      - ./configs/site-a.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
-      - /opt/funnel/site-a/work-dir:/opt/funnel/site-a/work-dir
-      - /opt/funnel/site-a/db:/opt/funnel/site-a/db
+      - ./configs/site-1.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /opt/funnel/site-1/work-dir:/opt/funnel/site-1/work-dir
+      - /opt/funnel/site-1/db:/opt/funnel/site-1/db
       - /var/run/docker.sock:/var/run/docker.sock
 
-  drs-site-a:
+  drs-site-1:
     image: ga4gh/ga4gh-starter-kit-drs:0.3.2
     ports:
       - "4502:4500"
@@ -63,7 +63,7 @@ services:
   # ==========================================
   # CLIENT SITE B (TES + DRS)
   # ==========================================
-  tes-site-b:
+  tes-site-2:
     environment:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -75,12 +75,12 @@ services:
     networks:
       - fed-network
     volumes:
-      - ./configs/site-b.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
-      - /opt/funnel/site-b/work-dir:/opt/funnel/site-b/work-dir
-      - /opt/funnel/site-b/db:/opt/funnel/site-b/db
+      - ./configs/site-2.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /opt/funnel/site-2/work-dir:/opt/funnel/site-2/work-dir
+      - /opt/funnel/site-2/db:/opt/funnel/site-2/db
       - /var/run/docker.sock:/var/run/docker.sock
 
-  drs-site-b:
+  drs-site-2:
     image: ga4gh/ga4gh-starter-kit-drs:0.3.2
     ports:
       - "4504:4500"
@@ -93,7 +93,7 @@ services:
   # ==========================================
   # CLIENT SITE C (TES + DRS)
   # ==========================================
-  tes-site-c:
+  tes-site-3:
     environment:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -105,12 +105,12 @@ services:
     networks:
       - fed-network
     volumes:
-      - ./configs/site-c.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
-      - /opt/funnel/site-c/work-dir:/opt/funnel/site-c/work-dir
-      - /opt/funnel/site-c/db:/opt/funnel/site-c/db
+      - ./configs/site-3.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /opt/funnel/site-3/work-dir:/opt/funnel/site-3/work-dir
+      - /opt/funnel/site-3/db:/opt/funnel/site-3/db
       - /var/run/docker.sock:/var/run/docker.sock
 
-  drs-site-c:
+  drs-site-3:
     image: ga4gh/ga4gh-starter-kit-drs:0.3.2
     ports:
       - "4506:4500"
@@ -123,7 +123,7 @@ services:
   # ==========================================
   # CLIENT SITE D (TES + DRS)
   # ==========================================
-  tes-site-d:
+  tes-site-4:
     environment:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
@@ -135,12 +135,12 @@ services:
     networks:
       - fed-network
     volumes:
-      - ./configs/site-d.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
-      - /opt/funnel/site-d/work-dir:/opt/funnel/site-d/work-dir
-      - /opt/funnel/site-d/db:/opt/funnel/site-d/db
+      - ./configs/site-4.funnel.config.yaml:/etc/funnel/funnel.config.yaml:ro
+      - /opt/funnel/site-4/work-dir:/opt/funnel/site-4/work-dir
+      - /opt/funnel/site-4/db:/opt/funnel/site-4/db
       - /var/run/docker.sock:/var/run/docker.sock
 
-  drs-site-d:
+  drs-site-4:
     image: ga4gh/ga4gh-starter-kit-drs:0.3.2
     ports:
       - "4508:4500"
@@ -178,14 +178,14 @@ services:
     image: curlimages/curl:latest
     depends_on:
       - drs-central
-      - drs-site-a
-      - drs-site-b
-      - drs-site-c
-      - drs-site-d
+      - drs-site-1
+      - drs-site-2
+      - drs-site-3
+      - drs-site-4
     networks:
       - fed-network
     volumes:
-      - ./seed/seed_drs.sh:/seed_drs.sh
+      - ./scripts/seed_drs.sh:/seed_drs.sh
     entrypoint: ["/bin/sh", "/seed_drs.sh"]
 
 networks:

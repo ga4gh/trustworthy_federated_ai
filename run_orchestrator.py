@@ -9,7 +9,7 @@ SITES = ['a', 'b', 'c', 'd']
 IMAGE_TAG = "trustworthy-fed-ai:v1"
 
 # BUCKET = os.environ["AWS_BUCKET"]
-BUCKET = "fl-models-common-bucket"
+BUCKET = "fl-models"
 
 # The TES servers find files relative to their internal /workspace mount
 TES_SHARED_DIR = "/workspace" 
