@@ -1,0 +1,426 @@
+# ==========================================
+# SITE A (TES + DRS)
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drs-site-1
+  namespace: fl-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drs-site-1
+  template:
+    metadata:
+      labels:
+        app: drs-site-1
+    spec:
+      containers:
+        - name: drs-site-1
+          image: ga4gh/ga4gh-starter-kit-drs:0.3.2
+          ports:
+            - containerPort: 4500
+            - containerPort: 4501
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+      volumes:
+        - name: data-volume
+          hostPath:
+            path: /data/site_a
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drs-site-1
+  namespace: fl-system
+spec:
+  type: NodePort
+  ports:
+    - name: client
+      port: 4500
+      targetPort: 4500
+      nodePort: 30502
+    - name: admin
+      port: 4501
+      targetPort: 4501
+      nodePort: 30503
+  selector:
+    app: drs-site-1
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tes-site-1
+  namespace: fl-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tes-site-1
+  template:
+    metadata:
+      labels:
+        app: tes-site-1
+    spec:
+      serviceAccountName: funnel-sa
+      containers:
+        - name: funnel
+          image: funnel:local
+          imagePullPolicy: Never
+          args: ["server", "run", "--config", "/etc/funnel/funnel.config.yaml"]
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/funnel
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+            - name: site-storage
+              mountPath: /opt/funnel/site-1
+      volumes:
+        - name: config-volume
+          configMap:
+            name: funnel-config-site-1
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: site-storage
+          hostPath:
+            path: /opt/funnel/site-1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tes-site-1
+  namespace: fl-system
+spec:
+  type: NodePort
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30001
+  selector:
+    app: tes-site-1
+
+---
+# ==========================================
+# SITE B (TES + DRS)
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drs-site-2
+  namespace: fl-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drs-site-2
+  template:
+    metadata:
+      labels:
+        app: drs-site-2
+    spec:
+      containers:
+        - name: drs-site-2
+          image: ga4gh/ga4gh-starter-kit-drs:0.3.2
+          ports:
+            - containerPort: 4500
+            - containerPort: 4501
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+      volumes:
+        - name: data-volume
+          hostPath:
+            path: /data/site_b
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drs-site-2
+  namespace: fl-system
+spec:
+  type: NodePort
+  ports:
+    - name: client
+      port: 4500
+      targetPort: 4500
+      nodePort: 30504
+    - name: admin
+      port: 4501
+      targetPort: 4501
+      nodePort: 30505
+  selector:
+    app: drs-site-2
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tes-site-2
+  namespace: fl-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tes-site-2
+  template:
+    metadata:
+      labels:
+        app: tes-site-2
+    spec:
+      serviceAccountName: funnel-sa
+      containers:
+        - name: funnel
+          image: funnel:local
+          imagePullPolicy: Never
+          args: ["server", "run", "--config", "/etc/funnel/funnel.config.yaml"]
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/funnel
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+            - name: site-storage
+              mountPath: /opt/funnel/site-2
+      volumes:
+        - name: config-volume
+          configMap:
+            name: funnel-config-site-2
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: site-storage
+          hostPath:
+            path: /opt/funnel/site-2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tes-site-2
+  namespace: fl-system
+spec:
+  type: NodePort
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30002
+  selector:
+    app: tes-site-2
+
+---
+# ==========================================
+# SITE C (TES + DRS)
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drs-site-3
+  namespace: fl-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drs-site-3
+  template:
+    metadata:
+      labels:
+        app: drs-site-3
+    spec:
+      containers:
+        - name: drs-site-3
+          image: ga4gh/ga4gh-starter-kit-drs:0.3.2
+          ports:
+            - containerPort: 4500
+            - containerPort: 4501
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+      volumes:
+        - name: data-volume
+          hostPath:
+            path: /data/site_c
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drs-site-3
+  namespace: fl-system
+spec:
+  type: NodePort
+  ports:
+    - name: client
+      port: 4500
+      targetPort: 4500
+      nodePort: 30506
+    - name: admin
+      port: 4501
+      targetPort: 4501
+      nodePort: 30507
+  selector:
+    app: drs-site-3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tes-site-3
+  namespace: fl-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tes-site-3
+  template:
+    metadata:
+      labels:
+        app: tes-site-3
+    spec:
+      serviceAccountName: funnel-sa
+      containers:
+        - name: funnel
+          image: funnel:local
+          imagePullPolicy: Never
+          args: ["server", "run", "--config", "/etc/funnel/funnel.config.yaml"]
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/funnel
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+            - name: site-storage
+              mountPath: /opt/funnel/site-3
+      volumes:
+        - name: config-volume
+          configMap:
+            name: funnel-config-site-3
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: site-storage
+          hostPath:
+            path: /opt/funnel/site-3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tes-site-3
+  namespace: fl-system
+spec:
+  type: NodePort
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30003
+  selector:
+    app: tes-site-3
+
+---
+# ==========================================
+# SITE D (TES + DRS)
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drs-site-4
+  namespace: fl-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drs-site-4
+  template:
+    metadata:
+      labels:
+        app: drs-site-4
+    spec:
+      containers:
+        - name: drs-site-4
+          image: ga4gh/ga4gh-starter-kit-drs:0.3.2
+          ports:
+            - containerPort: 4500
+            - containerPort: 4501
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+      volumes:
+        - name: data-volume
+          hostPath:
+            path: /data/site_d
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drs-site-4
+  namespace: fl-system
+spec:
+  type: NodePort
+  ports:
+    - name: client
+      port: 4500
+      targetPort: 4500
+      nodePort: 30508
+    - name: admin
+      port: 4501
+      targetPort: 4501
+      nodePort: 30509
+  selector:
+    app: drs-site-4
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tes-site-4
+  namespace: fl-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tes-site-4
+  template:
+    metadata:
+      labels:
+        app: tes-site-4
+    spec:
+      serviceAccountName: funnel-sa
+      containers:
+        - name: funnel
+          image: funnel:local
+          imagePullPolicy: Never
+          args: ["server", "run", "--config", "/etc/funnel/funnel.config.yaml"]
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/funnel
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+            - name: site-storage
+              mountPath: /opt/funnel/site-4
+      volumes:
+        - name: config-volume
+          configMap:
+            name: funnel-config-site-4
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: site-storage
+          hostPath:
+            path: /opt/funnel/site-4
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tes-site-4
+  namespace: fl-system
+spec:
+  type: NodePort
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30004
+  selector:
+    app: tes-site-4

@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: drs-central
+  namespace: fl-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: drs-central
+  template:
+    metadata:
+      labels:
+        app: drs-central
+    spec:
+      containers:
+        - name: drs-central
+          image: ga4gh/ga4gh-starter-kit-drs:0.3.2
+          ports:
+            - containerPort: 4500
+            - containerPort: 4501
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+      volumes:
+        - name: data-volume
+          hostPath:
+            path: /data/central
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: drs-central
+  namespace: fl-system
+spec:
+  type: NodePort
+  ports:
+    - name: client
+      port: 4500
+      targetPort: 4500
+      nodePort: 30500
+    - name: admin
+      port: 4501
+      targetPort: 4501
+      nodePort: 30501
+  selector:
+    app: drs-central
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tes-central
+  namespace: fl-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tes-central
+  template:
+    metadata:
+      labels:
+        app: tes-central
+    spec:
+      serviceAccountName: funnel-sa
+      containers:
+        - name: funnel
+          image: funnel:local
+          imagePullPolicy: Never
+          args: ["server", "run", "--config", "/etc/funnel/funnel.config.yaml"]
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/funnel
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+            - name: site-storage
+              mountPath: /opt/funnel/central
+      volumes:
+        - name: config-volume
+          configMap:
+            name: funnel-config-central
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: site-storage
+          hostPath:
+            path: /opt/funnel/central
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tes-central
+  namespace: fl-system
+spec:
+  type: NodePort
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30000
+  selector:
+    app: tes-central                                                                                                                                  
