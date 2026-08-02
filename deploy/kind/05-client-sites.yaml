@@ -28,7 +28,7 @@ spec:
       volumes:
         - name: data-volume
           hostPath:
-            path: /data/site_a
+            path: /data/site_1
 ---
 apiVersion: v1
 kind: Service
@@ -135,7 +135,7 @@ spec:
       volumes:
         - name: data-volume
           hostPath:
-            path: /data/site_b
+            path: /data/site_2
 ---
 apiVersion: v1
 kind: Service
@@ -242,7 +242,7 @@ spec:
       volumes:
         - name: data-volume
           hostPath:
-            path: /data/site_c
+            path: /data/site_3
 ---
 apiVersion: v1
 kind: Service
@@ -349,7 +349,7 @@ spec:
       volumes:
         - name: data-volume
           hostPath:
-            path: /data/site_d
+            path: /data/site_4
 ---
 apiVersion: v1
 kind: Service
