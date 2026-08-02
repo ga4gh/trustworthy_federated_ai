@@ -28,9 +28,8 @@ def federated_averaging(global_model, client_checkpoints, client_sample_sizes):
     return aggregated_state
 
 def resolve_central_test_data(drs_endpoint, object_id="central_test"):
-    """Fetches the global test set strictly from the central DRS node. Fails immediately if unreachable or empty."""
+    """Fetches global test set strictly from central DRS node."""
     try:
-        # Clean up endpoint URL
         drs_endpoint = drs_endpoint.rstrip("/")
         meta_url = f"{drs_endpoint}/ga4gh/drs/v1/objects/{object_id}"
         
@@ -44,19 +43,17 @@ def resolve_central_test_data(drs_endpoint, object_id="central_test"):
         
         stream_url = access_resp.json()["url"]
         
-        # Rewrite localhost relative URLs from DRS container to the actual endpoint
         if "localhost:4500" in stream_url:
             stream_url = stream_url.replace("http://localhost:4500", drs_endpoint, 1)
             
         stream_url = stream_url.replace("\n", "").replace("file://", "", 1)
         logger.info(f"Resolved test data stream URL: {stream_url}")
         
-        # Fetch stream and enforce strict content validation
         stream_resp = requests.get(stream_url, timeout=10)
         stream_resp.raise_for_status()
 
         if not stream_resp.text.strip():
-            raise ValueError(f"DRS stream at '{stream_url}' returned 0 bytes / empty content. Ensure DRS node is properly seeded.")
+            raise ValueError(f"DRS stream at '{stream_url}' returned 0 bytes / empty content.")
 
         df = pd.read_csv(StringIO(stream_resp.text), sep="\t")
         pc_cols = sorted([c for c in df.columns if c.upper().startswith("PC")], key=lambda x: int(''.join(filter(str.isdigit, x))))[:10]
@@ -84,8 +81,8 @@ def evaluate_global_model(model, test_loader):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--target-round", type=int, required=True)
-    parser.add_argument("--drs-endpoint", type=str, default="http://172.17.0.1:4500", help="Base URL of the Central DRS server")
-    parser.add_argument("--sites", type=str, default="a,b,c,d")
+    parser.add_argument("--drs-endpoint", type=str, default="http://172.17.0.1:4500", help="Base URL of Central DRS server")
+    parser.add_argument("--sites", type=str, default="1,2,3,4", help="Comma-separated site IDs (e.g. 1,2,3,4 or site_1,site_2)")
     parser.add_argument("--artifacts-dir", type=str, required=True, default="./checkpoints")
     parser.add_argument("--metrics-path", type=str, required=True, help="Explicit per-round metrics file output path")
     args = parser.parse_args()
@@ -93,7 +90,9 @@ def main():
     os.makedirs(args.artifacts_dir, exist_ok=True)
     os.makedirs(os.path.dirname(os.path.abspath(args.metrics_path)), exist_ok=True)
     global_model = AncestryNet(input_dim=10, num_classes=5)
-    sites = args.sites.split(",")
+    
+    # ✅ Fixed: Correct variable parsing
+    sites = [s.strip().replace("site_", "") for s in args.sites.split(",") if s.strip()]
 
     # Bootstrap Round 0
     if args.target_round == 0:
@@ -115,6 +114,11 @@ def main():
     client_checkpoints, client_sample_sizes = [], []
     for site in sites:
         path = os.path.join(args.artifacts_dir, f"client_{site}_round_{r}.pt")
+        if not os.path.exists(path):
+            alt_path = os.path.join(args.artifacts_dir, f"client_site_{site}_round_{r}.pt")
+            if os.path.exists(alt_path):
+                path = alt_path
+
         payload = torch.load(path, map_location="cpu")
         client_checkpoints.append(path)
         client_sample_sizes.append(payload.get("metadata", {}).get("num_examples", 100))
