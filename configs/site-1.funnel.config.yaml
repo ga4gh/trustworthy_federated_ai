@@ -1,0 +1,27 @@
+  Server:
+    HostName: localhost
+    HTTPPort: '8000'
+  LocalStorage:
+    AllowedDirs:
+    - /tmp/tes-workspace
+    - /tmp
+    - /workspace
+    - /data
+    - .
+    - ./shared_workspace/
+
+  Compute: local
+
+  GenericS3:
+    - Disabled: false
+      Endpoint: "http://minio:9000"
+      Key: "minioadmin"
+      Secret: "minioadmin"
+
+  AmazonS3:
+    Disabled: true
+  Worker:
+    WorkDir: /opt/funnel/site-1/work-dir
+
+  BoltDB:
+    Path: /opt/funnel/site-1/db/funnel.db

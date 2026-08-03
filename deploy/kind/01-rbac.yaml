@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fl-system
+  labels:
+    app.kubernetes.io/part-of: trustworthy-federated-ai
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: funnel-sa
+  namespace: fl-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: funnel-controller-role
+rules:
+  # Permissions to schedule and manage task pods natively inside Kubernetes
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/status", "pods/exec", "configmaps", "persistentvolumeclaims", "services", "events"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: funnel-controller-binding
+subjects:
+  - kind: ServiceAccount
+    name: funnel-sa
+    namespace: fl-system
+roleRef:
+  kind: ClusterRole
+  name: funnel-controller-role
+  apiGroup: rbac.authorization.k8s.io

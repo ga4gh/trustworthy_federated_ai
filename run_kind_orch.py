@@ -5,35 +5,28 @@ import tes
 import threading
 
 ROUNDS = 5
-SITES = ['a', 'b', 'c', 'd']
+SITES = ['1', '2', '3', '4']
 IMAGE_TAG = "trustworthy-fed-ai:v1"
+BUCKET = "fl-checkpoints"
 
-# BUCKET = os.environ["AWS_BUCKET"]
-BUCKET = "fl-models"
-
-# The TES servers find files relative to their internal /workspace mount
-TES_SHARED_DIR = "/workspace" 
-
-# Map specific TES clients to their docker-compose host ports
+# Host-accessible NodePort mappings for TES clients
 TES_CLIENTS = {
     'central': tes.HTTPClient("http://localhost:8000"),
-    'a': tes.HTTPClient("http://localhost:8001"),
-    'b': tes.HTTPClient("http://localhost:8002"),
-    'c': tes.HTTPClient("http://localhost:8003"),
-    'd': tes.HTTPClient("http://localhost:8004")
+    '1': tes.HTTPClient("http://localhost:8001"),
+    '2': tes.HTTPClient("http://localhost:8002"),
+    '3': tes.HTTPClient("http://localhost:8003"),
+    '4': tes.HTTPClient("http://localhost:8004")
 }
 
+# DRS endpoints using host gateway IP
 HOST_GATEWAY = "172.17.0.1"
-
-# Central DRS Endpoint mapping
 CENTRAL_DRS_ENDPOINT = f"http://{HOST_GATEWAY}:4500"
-
-# Site DRS Endpoints mapping
 DRS_ENDPOINTS = {
-    "a": f"http://{HOST_GATEWAY}:4502",
-    "b": f"http://{HOST_GATEWAY}:4504",
-    "c": f"http://{HOST_GATEWAY}:4506",
-    "d": f"http://{HOST_GATEWAY}:4508",
+    "central": f"http://{HOST_GATEWAY}:4500",
+    "1": f"http://{HOST_GATEWAY}:4502",
+    "2": f"http://{HOST_GATEWAY}:4504",
+    "3": f"http://{HOST_GATEWAY}:4506",
+    "4": f"http://{HOST_GATEWAY}:4508",
 }
 
 def execute_and_wait(task_object, tes_client, node_name="Unknown"):
@@ -56,7 +49,7 @@ def execute_and_wait(task_object, tes_client, node_name="Unknown"):
 
 def main():
     print("=========================================================================")
-    print("   Igniting Multi-DRS Federated Learning Pipeline                        ")
+    print("   Igniting Multi-DRS Federated Learning Pipeline (Kubernetes Native)   ")
     print("=========================================================================")
 
     # --- Phase 0: Bootstrap Initial Global Weights ---
@@ -88,7 +81,6 @@ def main():
             )
         ]
     )
-    # Execute on Central TES
     execute_and_wait(round_0_task, TES_CLIENTS['central'], "Central-Node")
 
     # --- Multi-Round FL State Machine ---
@@ -98,11 +90,9 @@ def main():
         print(f"#################################################################")
 
         threads = []
-        
-        # Step 1: Run Client Nodes Concurrently on their specific TES endpoints
         for site in SITES:
             client_task = tes.Task(
-                name=f"Client_Site_{site.upper()}_Round_{r}",
+                name=f"Client_Site_{site}_Round_{r}",
                 inputs=[
                     tes.Input(
                         url=f"s3://{BUCKET}/models/global_model_round_{r-1}.pt",
@@ -137,9 +127,8 @@ def main():
                     )
                 ]
             )
-            # Route to the specific site's TES client
             site_client = TES_CLIENTS[site]
-            t = threading.Thread(target=execute_and_wait, args=(client_task, site_client, f"Site-{site.upper()}"))
+            t = threading.Thread(target=execute_and_wait, args=(client_task, site_client, f"Site-{site}"))
             threads.append(t)
             t.start()
 
@@ -185,10 +174,9 @@ def main():
                 )
             ]
         )
-        # Execute Aggregation back on the Central TES
         execute_and_wait(server_task, TES_CLIENTS['central'], "Central-Node")
 
-    print("\n[✓] Federated Pipeline completed successfully.")
+    print("\n[✓] Kubernetes Federated Pipeline completed successfully.")
 
 if __name__ == "__main__":
     main()

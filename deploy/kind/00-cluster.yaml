@@ -1,0 +1,52 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: fl-cluster
+nodes:
+  - role: control-plane
+    extraMounts:
+      - hostPath: ./data
+        containerPath: /data
+      - hostPath: /opt/funnel
+        containerPath: /opt/funnel
+      - hostPath: /var/run/docker.sock
+        containerPath: /var/run/docker.sock
+    extraPortMappings:
+      - containerPort: 30000
+        hostPort: 8000
+        protocol: TCP
+      - containerPort: 30001
+        hostPort: 8001
+        protocol: TCP
+      - containerPort: 30002
+        hostPort: 8002
+        protocol: TCP
+      - containerPort: 30003
+        hostPort: 8003
+        protocol: TCP
+      - containerPort: 30004
+        hostPort: 8004
+        protocol: TCP
+      # Central DRS NodePort mapping
+      - containerPort: 30500
+        hostPort: 4500
+        protocol: TCP
+      # Client DRS NodePort mappings
+      - containerPort: 30502
+        hostPort: 4502
+        protocol: TCP
+      - containerPort: 30504
+        hostPort: 4504
+        protocol: TCP
+      - containerPort: 30506
+        hostPort: 4506
+        protocol: TCP
+      - containerPort: 30508
+        hostPort: 4508
+        protocol: TCP
+      # MinIO
+      - containerPort: 30900
+        hostPort: 9000
+        protocol: TCP
+      - containerPort: 30901
+        hostPort: 9001
+        protocol: TCP

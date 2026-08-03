@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drs-seeder-script
+  namespace: fl-system
+data:
+  seed_drs.sh: |
+    #!/bin/sh
+    set -e
+    echo "Waiting for DRS servers to spin up..."
+    hosts="drs-site-1 drs-site-2 drs-site-3 drs-site-4 drs-central"
+
+    for host in $hosts; do
+      echo "Checking $host..."
+      until curl --silent --output /dev/null http://$host:4500/ga4gh/drs/v1/service-info; do
+        printf '.'
+        sleep 1
+      done
+      echo "$host is up!"
+    done
+
+    echo "Seeding Site 1..."
+    curl -s --request POST --url http://drs-site-1:4501/admin/ga4gh/drs/v1/objects --header 'content-type: application/json' --data '{"id": "site_1_train", "description": "Training split Site 1", "name": "train.tsv", "is_bundle": false, "size": 85000, "checksums": [{"checksum": "83709ab2755fed31503cd34bd7a58a69", "type": "md5"}], "file_access_objects": [{"path": "/data/train.tsv"}]}'
+    curl -s --request POST --url http://drs-site-1:4501/admin/ga4gh/drs/v1/objects --header 'content-type: application/json' --data '{"id": "site_1_val", "description": "Validation split Site 1", "name": "val.tsv", "is_bundle": false, "size": 15000, "checksums": [{"checksum": "93709ab2755fed31503cd34bd7a58b70", "type": "md5"}], "file_access_objects": [{"path": "/data/val.tsv"}]}'
+
+    echo "Seeding Site 2..."
+    curl -s --request POST --url http://drs-site-2:4501/admin/ga4gh/drs/v1/objects --header 'content-type: application/json' --data '{"id": "site_2_train", "description": "Training split Site 2", "name": "train.tsv", "is_bundle": false, "size": 85000, "checksums": [{"checksum": "83709ab2755fed31503cd34bd7a58a69", "type": "md5"}], "file_access_objects": [{"path": "/data/train.tsv"}]}'
+    curl -s --request POST --url http://drs-site-2:4501/admin/ga4gh/drs/v1/objects --header 'content-type: application/json' --data '{"id": "site_2_val", "description": "Validation split Site 2", "name": "val.tsv", "is_bundle": false, "size": 15000, "checksums": [{"checksum": "93709ab2755fed31503cd34bd7a58b70", "type": "md5"}], "file_access_objects": [{"path": "/data/val.tsv"}]}'
+
+    echo "Seeding Site 3..."
+    curl -s --request POST --url http://drs-site-3:4501/admin/ga4gh/drs/v1/objects --header 'content-type: application/json' --data '{"id": "site_3_train", "description": "Training split Site 3", "name": "train.tsv", "is_bundle": false, "size": 85000, "checksums": [{"checksum": "83709ab2755fed31503cd34bd7a58a69", "type": "md5"}], "file_access_objects": [{"path": "/data/train.tsv"}]}'
+    curl -s --request POST --url http://drs-site-3:4501/admin/ga4gh/drs/v1/objects --header 'content-type: application/json' --data '{"id": "site_3_val", "description": "Validation split Site 3", "name": "val.tsv", "is_bundle": false, "size": 15000, "checksums": [{"checksum": "93709ab2755fed31503cd34bd7a58b70", "type": "md5"}], "file_access_objects": [{"path": "/data/val.tsv"}]}'
+
+    echo "Seeding Site 4..."
+    curl -s --request POST --url http://drs-site-4:4501/admin/ga4gh/drs/v1/objects --header 'content-type: application/json' --data '{"id": "site_4_train", "description": "Training split Site 4", "name": "train.tsv", "is_bundle": false, "size": 85000, "checksums": [{"checksum": "83709ab2755fed31503cd34bd7a58a69", "type": "md5"}], "file_access_objects": [{"path": "/data/train.tsv"}]}'
+    curl -s --request POST --url http://drs-site-4:4501/admin/ga4gh/drs/v1/objects --header 'content-type: application/json' --data '{"id": "site_4_val", "description": "Validation split Site 4", "name": "val.tsv", "is_bundle": false, "size": 15000, "checksums": [{"checksum": "93709ab2755fed31503cd34bd7a58b70", "type": "md5"}], "file_access_objects": [{"path": "/data/val.tsv"}]}'
+
+    echo "Seeding Central Server Test Data..."
+    curl -s --request POST --url http://drs-central:4501/admin/ga4gh/drs/v1/objects --header 'content-type: application/json' --data '{"id": "central_test", "description": "Global Test Evaluation Set", "name": "test.tsv", "is_bundle": false, "size": 25000, "checksums": [{"checksum": "a3709ab2755fed31503cd34bd7a58c71", "type": "md5"}], "file_access_objects": [{"path": "/data/test.tsv"}]}'
+
+    echo "All DRS objects successfully registered!"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: drs-seeder-job
+  namespace: fl-system
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: seeder
+          image: curlimages/curl:latest
+          command: ["/bin/sh", "/scripts/seed_drs.sh"]
+          volumeMounts:
+            - name: script-volume
+              mountPath: /scripts
+      volumes:
+        - name: script-volume
+          configMap:
+            name: drs-seeder-script
+            defaultMode: 0755

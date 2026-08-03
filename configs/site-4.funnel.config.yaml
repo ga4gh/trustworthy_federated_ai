@@ -20,3 +20,8 @@ GenericS3:
 
 AmazonS3:
   Disabled: true
+Worker:
+  WorkDir: /opt/funnel/site-4/work-dir
+
+BoltDB:
+  Path: /opt/funnel/site-4/db/funnel.db
