@@ -1,0 +1,24 @@
+name: flan-env
+
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+
+dependencies:
+  - python=3.10
+  - pip
+
+  - pip:
+      - flwr==1.27.0
+      - py-tes
+      - torch
+      - torchmetrics
+      - pandas
+      - numpy
+      - scikit-learn
+      - matplotlib
+      - plotly
+      - requests
+      - pyyaml
+      - tqdm
