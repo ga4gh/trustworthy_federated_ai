@@ -6,8 +6,8 @@ nodes:
     extraMounts:
       - hostPath: ./data
         containerPath: /data
-      - hostPath: /opt/funnel
-        containerPath: /opt/funnel
+      - hostPath: /tmp/funnel
+        containerPath: /tmp/funnel
       - hostPath: /var/run/docker.sock
         containerPath: /var/run/docker.sock
     extraPortMappings:

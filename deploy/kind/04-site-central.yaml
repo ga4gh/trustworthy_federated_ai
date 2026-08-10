@@ -75,7 +75,7 @@ spec:
             - name: docker-sock
               mountPath: /var/run/docker.sock
             - name: site-storage
-              mountPath: /opt/funnel/central
+              mountPath: /tmp/funnel/central
       volumes:
         - name: config-volume
           configMap:
@@ -85,7 +85,8 @@ spec:
             path: /var/run/docker.sock
         - name: site-storage
           hostPath:
-            path: /opt/funnel/central
+            path: /tmp/funnel/central
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service

@@ -11,12 +11,12 @@ data:
       RPCPort: "9090"
     Compute: local
     BoltDB:
-      Path: /opt/funnel/central/db/funnel.db
+      Path: /tmp/funnel/central/db/funnel.db
     Worker:
-      WorkDir: /opt/funnel/central/work-dir
+      WorkDir: /tmp/funnel/central/work-dir
     LocalStorage:
       AllowedDirs:
-        - /opt/funnel/central/work-dir
+        - /tmp/funnel/central/work-dir
         - /tmp
         - /workspace
         - /data
@@ -43,12 +43,12 @@ data:
       RPCPort: "9090"
     Compute: local
     BoltDB:
-      Path: /opt/funnel/site-1/db/funnel.db
+      Path: /tmp/funnel/site-1/db/funnel.db
     Worker:
-      WorkDir: /opt/funnel/site-1/work-dir
+      WorkDir: /tmp/funnel/site-1/work-dir
     LocalStorage:
       AllowedDirs:
-        - /opt/funnel/site-1/work-dir
+        - /tmp/funnel/site-1/work-dir
         - /tmp
         - /workspace
         - /data
@@ -75,12 +75,12 @@ data:
       RPCPort: "9090"
     Compute: local
     BoltDB:
-      Path: /opt/funnel/site-2/db/funnel.db
+      Path: /tmp/funnel/site-2/db/funnel.db
     Worker:
-      WorkDir: /opt/funnel/site-2/work-dir
+      WorkDir: /tmp/funnel/site-2/work-dir
     LocalStorage:
       AllowedDirs:
-        - /opt/funnel/site-2/work-dir
+        - /tmp/funnel/site-2/work-dir
         - /tmp
         - /workspace
         - /data
@@ -107,12 +107,12 @@ data:
       RPCPort: "9090"
     Compute: local
     BoltDB:
-      Path: /opt/funnel/site-3/db/funnel.db
+      Path: /tmp/funnel/site-3/db/funnel.db
     Worker:
-      WorkDir: /opt/funnel/site-3/work-dir
+      WorkDir: /tmp/funnel/site-3/work-dir
     LocalStorage:
       AllowedDirs:
-        - /opt/funnel/site-3/work-dir
+        - /tmp/funnel/site-3/work-dir
         - /tmp
         - /workspace
         - /data
@@ -139,12 +139,12 @@ data:
       RPCPort: "9090"
     Compute: local
     BoltDB:
-      Path: /opt/funnel/site-4/db/funnel.db
+      Path: /tmp/funnel/site-4/db/funnel.db
     Worker:
-      WorkDir: /opt/funnel/site-4/work-dir
+      WorkDir: /tmp/funnel/site-4/work-dir
     LocalStorage:
       AllowedDirs:
-        - /opt/funnel/site-4/work-dir
+        - /tmp/funnel/site-4/work-dir
         - /tmp
         - /workspace
         - /data

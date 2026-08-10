@@ -78,7 +78,7 @@ spec:
             - name: docker-sock
               mountPath: /var/run/docker.sock
             - name: site-storage
-              mountPath: /opt/funnel/site-1
+              mountPath: /tmp/funnel/site-1
       volumes:
         - name: config-volume
           configMap:
@@ -88,7 +88,8 @@ spec:
             path: /var/run/docker.sock
         - name: site-storage
           hostPath:
-            path: /opt/funnel/site-1
+            path: /tmp/funnel/site-1
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
@@ -185,7 +186,7 @@ spec:
             - name: docker-sock
               mountPath: /var/run/docker.sock
             - name: site-storage
-              mountPath: /opt/funnel/site-2
+              mountPath: /tmp/funnel/site-2
       volumes:
         - name: config-volume
           configMap:
@@ -195,7 +196,8 @@ spec:
             path: /var/run/docker.sock
         - name: site-storage
           hostPath:
-            path: /opt/funnel/site-2
+            path: /tmp/funnel/site-2
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
@@ -292,7 +294,7 @@ spec:
             - name: docker-sock
               mountPath: /var/run/docker.sock
             - name: site-storage
-              mountPath: /opt/funnel/site-3
+              mountPath: /tmp/funnel/site-3
       volumes:
         - name: config-volume
           configMap:
@@ -302,7 +304,8 @@ spec:
             path: /var/run/docker.sock
         - name: site-storage
           hostPath:
-            path: /opt/funnel/site-3
+            path: /tmp/funnel/site-3
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
@@ -399,7 +402,7 @@ spec:
             - name: docker-sock
               mountPath: /var/run/docker.sock
             - name: site-storage
-              mountPath: /opt/funnel/site-4
+              mountPath: /tmp/funnel/site-4
       volumes:
         - name: config-volume
           configMap:
@@ -409,7 +412,8 @@ spec:
             path: /var/run/docker.sock
         - name: site-storage
           hostPath:
-            path: /opt/funnel/site-4
+            path: /tmp/funnel/site-4
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
