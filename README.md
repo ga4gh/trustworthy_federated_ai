@@ -53,7 +53,7 @@ Rather than passing massive, multi-gigabyte raw VCF (Variant Call Format) files 
 
 The architecture models multi-institution firewalls by deploying isolated namespaces, local task engines, and object storage within a single Kind cluster (`fl-cluster`) under the `fl-system` namespace:
 
-# insert diagram
+<img width="2684" height="2006" alt="ga4gh_fedai_model" src="https://github.com/user-attachments/assets/b7df21ae-62a4-4360-8f2a-d39409f855e5" />
 
 ## Prerequisites
 Install:
