@@ -57,16 +57,6 @@ echo "[5/9] Preparing dataset..."
 python scripts/get_flan_data.py
 python scripts/prepare_splits_after_flan.py
 
-echo "[6/9] Creating Funnel directories..."
-
-sudo mkdir -p \
-    /opt/funnel/central/work-dir /opt/funnel/central/db \
-    /opt/funnel/site-1/work-dir /opt/funnel/site-1/db \
-    /opt/funnel/site-2/work-dir /opt/funnel/site-2/db \
-    /opt/funnel/site-3/work-dir /opt/funnel/site-3/db \
-    /opt/funnel/site-4/work-dir /opt/funnel/site-4/db
-
-sudo chmod -R 777 /opt/funnel
 
 echo "[7/9] Creating Kind cluster..."
 

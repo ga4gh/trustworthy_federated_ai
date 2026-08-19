@@ -3,6 +3,7 @@ import sys
 import time
 import tes
 import threading
+import socket
 
 ROUNDS = 5
 SITES = ['1', '2', '3', '4']
@@ -17,9 +18,28 @@ TES_CLIENTS = {
     '3': tes.HTTPClient("http://localhost:8003"),
     '4': tes.HTTPClient("http://localhost:8004")
 }
+def get_lan_ip():
+    """
+    Forces the OS to resolve its primary active network interface IP
+    without actually sending any traffic out.
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # We don't actually connect to 10.255.255.255, we just use it 
+        # to force the OS routing table to pick the default outbound interface.
+        s.connect(('10.255.255.255', 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        # Fallback just in case there is no network connection at all
+        ip = '172.17.0.1'
+    finally:
+        s.close()
+    return ip
 
+# Dynamically assign the correct routing IP
+HOST_GATEWAY = get_lan_ip()
 # DRS endpoints using host gateway IP
-HOST_GATEWAY = "172.17.0.1"
+#HOST_GATEWAY = "172.17.0.1"
 CENTRAL_DRS_ENDPOINT = f"http://{HOST_GATEWAY}:4500"
 DRS_ENDPOINTS = {
     "central": f"http://{HOST_GATEWAY}:4500",
