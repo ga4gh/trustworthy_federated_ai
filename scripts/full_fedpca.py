@@ -414,7 +414,7 @@ def main():
     parser.add_argument("--num-sites", type=int, default=4, help="Number of client biobank sites (default: 4).")
     parser.add_argument("--alpha", type=float, default=0.5, help="Dirichlet concentration parameter for non-IID skew (default: 0.5).")
     parser.add_argument("--n-components", type=int, default=10, help="Number of genetic Principal Components (default: 10).")
-    parser.add_argument("--cache-dir", type=str, default=str(Path.home() / ".cache" / "federated_ancestry"), help="Path to cache raw genotypes.")
+    parser.add_argument("--cache-dir", type=str, default=str(Path.home() / ".cache" / "trustworthy_fed_ai"), help="Path to cache raw genotypes.")
     parser.add_argument("--out-dir", type=str, default="./data", help="Output directory for train/val/test splits.")
 
     args = parser.parse_args()

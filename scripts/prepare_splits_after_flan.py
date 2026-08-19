@@ -80,7 +80,7 @@ def main():
     parser = argparse.ArgumentParser(description="Dynamically prepare FL client data from PLINK cache.")
     parser.add_argument("--num-sites", type=int, default=4, help="Number of client sites to generate.")
     parser.add_argument("--fold", type=int, default=0, help="Which fold to use from the cache.")
-    parser.add_argument("--cache-dir", type=str, default=str(Path.home() / '.cache' / 'deep_ancestry'), help="Path to the global prepared data cache.")
+    parser.add_argument("--cache-dir", type=str, default=str(Path.home() / '.cache' / 'trustworthy_fed_ai'), help="Path to the global prepared data cache.")
     parser.add_argument("--out-dir", type=str, default="../data", help="Where to save the output TSVs for the DRS seeder.")
     args = parser.parse_args()
 
