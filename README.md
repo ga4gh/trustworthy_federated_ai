@@ -66,12 +66,7 @@ Install:
 * kubectl
 * Git
 * Conda / Miniconda
-
-### Go
-
-Go is used during the Funnel Docker image build. A separate Go installation on the host is **not required** because the provided `Dockerfile.funnel` uses a Go build environment inside Docker.
-
-If you want to develop Funnel locally outside of Docker, see the official [Go installation instructions](https://go.dev/doc/install).
+* [Golang](https://go.dev/doc/install)
 
 ---
 
