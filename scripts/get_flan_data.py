@@ -135,7 +135,12 @@ class FileCache:
         elif fold_index is None:
             return self.root / 'plots' / f'{part}_pca_pc{pc_x}_pc{pc_y}.html'
         return self.root / 'plots' / f'fold_{fold_index}' / f'{part}_pca_pc{pc_x}_pc{pc_y}.html'
-
+class DownloadProgressBar(tqdm):
+    """Tracks urlretrieve downloads with dynamic byte units and correct deltas."""
+    def update_to(self, b=1, bsize=1, tsize=None):
+        if tsize is not None:
+            self.total = tsize
+        self.update(b * bsize - self.n)
 # ==========================================
 # MODULES (Download, QC, Split, PCA)
 # ==========================================
@@ -146,14 +151,12 @@ class TGDownloader:
         self.panel_link = "http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/hd_genotype_chip/affy_samples.20141118.panel"
         
     def _download_file(self, link: str, output_path: Path) -> None:
-        if not output_path.exists():
-            with tqdm(total=100, desc=f'Downloading {output_path.name}', unit='MB') as pbar:
-                def reporthook(blocknum, blocksize, totalsize):
-                    pbar.update(blocknum * blocksize // 1e+6)
-                urlretrieve(link, output_path, reporthook)
+            if not output_path.exists():
+                with DownloadProgressBar(unit='B', unit_scale=True, unit_divisor=1024, miniters=1, desc=f'Downloading {output_path.name}') as pbar:
+                    urlretrieve(link, output_path, reporthook=pbar.update_to)
                 logging.info(f'Downloaded {link} to {output_path}')            
-        else:
-            logging.info(f'File {output_path} already exists')
+            else:
+                logging.info(f'File {output_path} already exists')
     
     def _create_keep_samples_file(self, cache: FileCache):
         sf_path = cache.keep_samples_path()
