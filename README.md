@@ -1,4 +1,4 @@
-#  GA4GH Trustworthy Federated AI: Genomic Ancestry Prediction
+# GA4GH Trustworthy Federated AI: Genomic Ancestry Prediction
 
 [![Standards](https://img.shields.io/badge/GA4GH-TES%20%7C%20DRS-blue)](https://www.ga4gh.org/)
 [![Orchestration](https://img.shields.io/badge/Kubernetes-Kind-green)](https://kind.sigs.k8s.io/)
@@ -6,7 +6,6 @@
 [![Dataset](https://img.shields.io/badge/Dataset-1000%20Genomes-orange)](https://www.internationalgenome.org/)
 
 A proof-of-concept for federated learning on genomic data using GA4GH standards. The project demonstrates distributed ancestry classification across multiple simulated institutions using DRS, TES, Kubernetes, and MinIO.
-
 
 ## 🛠️ Components & Tooling Versions
 
@@ -42,10 +41,11 @@ Rather than passing massive, multi-gigabyte raw VCF (Variant Call Format) files 
 
 * **`server.py` (Central Aggregator):** Manages global training rounds, pulls client checkpoints from MinIO, executes mathematical weight averaging (FedAvg), and evaluates global test metrics.
 * **`client.py` (Edge Worker):** An ephemeral containerized script that resolves its training and validation splits via DRS, loads the 10-feature coordinate tensors into the `AncestryNet` MLP, trains locally, and outputs updated weights.
-* **`run_kind_orch.py` (The Orchestrator):** Dispatches standard JSON task payloads (`tes.Task`) to individual institutional TES endpoints via multi-threading, acting as the workflow conductor.
+* **`run_orch.py` (The Orchestrator):** Dispatches standard JSON task payloads (`tes.Task`) to individual institutional TES endpoints via multi-threading, acting as the workflow conductor.
+* **`plot_results.py` (Results Plotter):** Retrieves the training metrics stored in MinIO and generates convergence plots showing global and per-site model performance across federated rounds.
 * **GA4GH DRS (Starter Kit):** Serves metadata and access URIs (`drs://`) for institutional datasets, decoupling storage locations from computation.
 * **GA4GH TES (Funnel):** Accepts task submissions over REST API and manages container execution environments across Kubernetes pods.
-* **MinIO Storage:** S3-compatible object store hosting global model checkpoints and client weight updates in bucket `s3://fl-checkpoints/`.
+* **MinIO Storage:** S3-compatible object store hosting global model checkpoints, client weight updates, and training metrics in bucket `s3://fl-checkpoints/`.
 
 ---
 
@@ -55,7 +55,10 @@ The architecture models multi-institution firewalls by deploying isolated namesp
 
 <img width="2684" height="2006" alt="ga4gh_fedai_model" src="https://github.com/user-attachments/assets/b7df21ae-62a4-4360-8f2a-d39409f855e5" />
 
+---
+
 ## Prerequisites
+
 Install:
 
 * Docker
@@ -63,6 +66,12 @@ Install:
 * kubectl
 * Git
 * Conda / Miniconda
+
+### Go
+
+Go is used inside the Funnel Docker build process. A separate Go installation on the host is **not required** when building Funnel through the provided Dockerfile, since the Dockerfile uses a Go build environment internally.
+
+If you need Go for local Funnel development outside Docker, see the official [Go installation instructions](https://go.dev/doc/install).
 
 ---
 
@@ -94,12 +103,31 @@ pip install -e .
 cd ../trustworthy_federated_ai
 ```
 
-Build the Docker images:
+### Build the Docker images
+
+Build the federated learning image:
 
 ```bash
 docker build -t trustworthy-fed-ai:v1 -f src/Dockerfile src/
+```
 
+Build the custom Funnel image:
+
+```bash
 docker build -t funnel:local -f ../funnel/Dockerfile ../funnel
+```
+
+Verify that both images were built successfully:
+
+```bash
+docker images | grep -E "trustworthy-fed-ai|funnel"
+```
+
+You should see both:
+
+```text
+trustworthy-fed-ai    v1
+funnel                local
 ```
 
 ---
@@ -122,6 +150,8 @@ kind create cluster --config deploy/kind/00-cluster.yaml
 
 ### 3. Load Docker images
 
+Load the locally built images into the Kind cluster:
+
 ```bash
 kind load docker-image trustworthy-fed-ai:v1 --name fl-cluster
 
@@ -140,13 +170,21 @@ kubectl apply \
     -f deploy/kind/06-seeder-job.yaml
 ```
 
-Wait until all pods are running:
+Wait until the infrastructure is running:
 
 ```bash
 kubectl get pods -n fl-system -w
 ```
 
-The seeder job should finish with `Completed` before continuing.
+The DRS seeder job should finish with **four completed outputs**, corresponding to the four simulated DRS servers/sites.
+
+You can check the job status with:
+
+```bash
+kubectl get jobs -n fl-system
+```
+
+The seeder job should report `Completed` before continuing.
 
 ### 5. Configure MinIO
 
@@ -158,11 +196,92 @@ kubectl exec -n fl-system deployment/minio -- \
     mc mb myminio/fl-checkpoints || true
 ```
 
-### 7. Start federated learning
+### 6. Browse MinIO through the web portal
+
+MinIO provides a web console that can be used to inspect the buckets, model checkpoints, and training metrics produced during the federated learning run.
+
+Start the MinIO port-forward:
 
 ```bash
-python run_kind_orch.py
+kubectl port-forward svc/minio 9000:9000 9001:9001 -n fl-system
 ```
+
+Then open the MinIO Console in your browser:
+
+```text
+http://localhost:9001
+```
+
+Use the default credentials:
+
+```text
+Username: minioadmin
+Password: minioadmin
+```
+
+The `fl-checkpoints` bucket contains the model checkpoints and metrics generated during training.
+
+### 7. Start federated learning
+
+Run the final orchestrator:
+
+```bash
+python run_orch.py
+```
+
+The orchestrator dispatches the federated training tasks to the central and client TES endpoints. Training progress can be monitored through the Kubernetes pods and the generated MinIO objects.
+
+---
+
+## 📊 Model Performance & Results
+
+After the federated training run completes, the repository includes a plotting script for inspecting model performance across communication rounds.
+
+The script:
+
+* Reads the server-side metrics from MinIO.
+* Reads the validation metrics produced by each client site.
+* Aggregates metrics across federated rounds.
+* Plots global test accuracy and per-site validation accuracy.
+* Plots global test loss and per-site validation loss.
+
+Before running the plotting script, make sure the MinIO service is accessible from the host. If the port-forward from the previous step is not already running:
+
+```bash
+kubectl port-forward svc/minio 9000:9000 -n fl-system
+```
+
+Then run:
+
+```bash
+python plot_results.py
+```
+
+The script reads metrics from:
+
+```text
+s3://fl-checkpoints/metrics/
+```
+
+and generates:
+
+```text
+results/fl_convergence_curve.png
+```
+
+The resulting figure contains two plots:
+
+1. **Federated Convergence: Accuracy**
+   * Global test accuracy from the central server.
+   * Validation accuracy for each client site.
+   * Accuracy across communication rounds.
+
+2. **Federated Convergence: Loss**
+   * Global test loss from the central server.
+   * Validation loss for each client site.
+   * Loss across communication rounds.
+
+The generated image can therefore be used to inspect whether the global model is converging and how the individual simulated institutions perform throughout federated training.
 
 ---
 
@@ -175,7 +294,8 @@ python run_kind_orch.py
 │   └── kind/
 ├── scripts/
 ├── src/
-├── run_kind_orch.py
+├── plot_results.py
+├── run_orch.py
 ├── environment.yml
 └── README.md
 ```
