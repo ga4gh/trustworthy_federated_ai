@@ -281,7 +281,6 @@ The main entry point for understanding the current federated training workflow i
 The repository is organized around the federated learning code, data preparation, Kubernetes deployment, and Funnel configuration.
 
 ```text
-.
 
 ├── deploy/
 │   └── kind/
@@ -312,9 +311,7 @@ The repository is organized around the federated learning code, data preparation
 ├── run_orch.py
 ├── README.md
 └── LICENSE
-
-
----
+```
 
 ## Model
 
@@ -337,7 +334,7 @@ Under the mentorship of **Andrew Gearhart**, Vidit implemented the federated lea
 * Kubernetes/Kind deployment for simulated institutional sites.
 * Data preparation, train/validation/test splits, and results visualization.
 
-The project uses **FLAN** for parts of the genomic preprocessing workflow, while the federated learning pipeline and integration work in this repository were developed specifically for the GSoC project.
+The project uses **FLAN** for parts of the genomic preprocessing workflow, while the federated learning pipeline and GA4GH-aligned integration work in this repository were developed specifically for the GSoC project.
 
 **Current status:** End-to-end proof-of-concept federated training is operational on a local Kind cluster. Further work includes production-oriented deployment, stronger security with integrations with GA4GH Passports, fault tolerance, and so on.
 
